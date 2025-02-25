@@ -2,13 +2,20 @@
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
 .env
+quiz_app.db
 
 # Node.js 관련 파일
 node_modules/
 .next/
-.env.local
 
 # OS 관련 파일
 .DS_Store
 Thumbs.db
+
+# IDE 및 편집기 관련 파일
+.idea/
+*.iml
