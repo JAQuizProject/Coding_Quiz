@@ -1,0 +1,14 @@
+# Python 가상환경 관련 파일
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Node.js 관련 파일
+node_modules/
+.next/
+.env.local
+
+# OS 관련 파일
+.DS_Store
+Thumbs.db
