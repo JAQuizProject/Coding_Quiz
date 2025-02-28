@@ -4,26 +4,6 @@ from ..database import SessionLocal
 from ..models import User
 from pydantic import BaseModel # 요청 데이터 검증을 위한 Pydantic 모델
 
-"""
-Java Spring MVC와 FastAPI 비교
-
-1. **컨트롤러 (UserController.java)**
-   - FastAPI의 `@router.post("/signup")` ⇔ Spring MVC의 `@PostMapping("/signup")`
-   - 사용자 회원가입 요청을 처리하는 역할
-
-2. **DTO (UserDTO.java)**
-   - FastAPI의 `UserCreate(BaseModel)` ⇔ Java의 `UserDTO`
-   - 요청 데이터 검증 및 전달
-
-3. **DAO (UserDAO.java)**
-   - FastAPI의 `get_db()` ⇔ Java의 `@Autowired UserDAO`
-   - DB 세션 관리 및 데이터 조회/삽입
-
-4. **데이터 저장 (JDBC Template)**
-   - FastAPI의 `db.add(new_user) -> db.commit()` ⇔ Java의 `jdbcTemplate.update("INSERT INTO users ...")`
-   - 회원 정보를 데이터베이스에 저장
-"""
-
 # FastAPI의 APIRouter 객체 생성
 router = APIRouter()
 
