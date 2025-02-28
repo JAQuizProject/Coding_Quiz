@@ -6,9 +6,9 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 # SQLite DB 연결 경로
-DATABASE_PATH = "backend/quiz_app.db"
+DATABASE_PATH = "quiz_app.db"
 # 감시할 CSV 파일 경로
-CSV_FILE_PATH = "backend/csv_files/quiz_data.csv"
+CSV_FILE_PATH = "csv_files/quiz_data.csv"
 
 # CSV 파일을 읽어 데이터베이스에 저장하는 함수
 def store_csv_to_db(csv_file_path):
