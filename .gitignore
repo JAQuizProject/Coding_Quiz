@@ -1,23 +1,44 @@
-# Python 가상환경 관련 파일
+# ✅ Python 관련 (백엔드)
+# 가상환경 폴더
 .venv/
+venv/
+
+# Python 캐시 파일
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
+
+# 환경 변수 파일 (보안)
 .env
-quiz_app.db
+backend/.env
+frontend/.env
 
-venv/
+# SQLite 데이터베이스 파일
+backend/quiz_app.db
 
-# Node.js 관련 파일
+# FastAPI & Uvicorn 관련
+instance/
+*.pid
+
+# ✅ Node.js 관련 (프론트엔드)
+# Node.js 모듈 폴더 (의존성)
 node_modules/
-.next/
 
-# OS 관련 파일
+# Next.js 빌드 폴더
+.next/
+out/
+dist/
+
+# ✅ 운영체제(OS) 관련
 .DS_Store
 Thumbs.db
 
-# IDE 및 편집기 관련 파일
+# ✅ IDE 및 편집기 설정 파일
 .idea/
+.vscode/
 *.iml
+
+# ✅ 로그 파일
+logs/
+*.log
