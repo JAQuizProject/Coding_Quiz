@@ -8,6 +8,8 @@ __pycache__/
 .env
 quiz_app.db
 
+venv/
+
 # Node.js 관련 파일
 node_modules/
 .next/
