@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { login } from "../api/auth"; // login 함수 가져오기
+import { login } from "../../api/auth"; // login 함수 가져오기
 
 export default function Login() {
   const [formData, setFormData] = useState({

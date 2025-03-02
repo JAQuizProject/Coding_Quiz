@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 
 export default function Home() {
@@ -11,9 +13,9 @@ export default function Home() {
   }, []);
 
   return (
-    <div>
+    <main>
       <h1>Coding Quiz</h1>
       <p>Backend says: {message}</p>
-    </div>
+    </main>
   );
 }

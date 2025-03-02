@@ -1,12 +1,10 @@
-const BASE_URL = "http://127.0.0.1:8000"; // FastAPI 주소
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"; // 환경변수 적용
 
 export const signup = async (userData) => {
   try {
-    const response = await fetch("http://127.0.0.1:8000/auth/signup", {
+    const response = await fetch(`${BASE_URL}/auth/signup`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
     });
 
@@ -20,7 +18,6 @@ export const signup = async (userData) => {
     return { error: "서버와 연결할 수 없습니다." };
   }
 };
-
 
 export const login = async (userData) => {
   try {

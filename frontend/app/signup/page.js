@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { signup } from "../api/auth"; // signup 함수 가져오기
+import { signup } from "../../api/auth"; // signup 함수 가져오기
 
 export default function Signup() {
   const [formData, setFormData] = useState({

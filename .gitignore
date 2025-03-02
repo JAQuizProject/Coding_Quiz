@@ -16,6 +16,7 @@ frontend/.env
 
 # SQLite 데이터베이스 파일
 backend/quiz_app.db
+quiz_app.db
 
 # FastAPI & Uvicorn 관련
 instance/
