@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from ..core.database import get_db
@@ -6,7 +7,7 @@ from ..core.security import get_password_hash, verify_password, create_access_to
 from pydantic import BaseModel
 from datetime import timedelta
 from fastapi.security import OAuth2PasswordBearer
-import os
+
 
 router = APIRouter()
 

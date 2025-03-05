@@ -7,10 +7,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import init_db
-from app.routes.auth import router as auth_router
+from app.routes import router
 from app.core import csv_listener # CSV 감시 모듈 import
 
-app = FastAPI()
+app = FastAPI(debug=True)
 
 # CORS 설정
 app.add_middleware(
@@ -25,7 +25,7 @@ app.add_middleware(
 init_db()
 
 # 라우터 등록
-app.include_router(auth_router, prefix="/auth")
+app.include_router(router)
 
 @app.get("/")
 def read_root():
@@ -40,9 +40,12 @@ def read_root():
 # 최신 방식 (lifespan) 사용
 # FastAPI 버전 업데이트
 # Linter 경고 무시
+
 @app.on_event("startup")
 def on_startup():
     csv_listener.start_csv_listener()  # 서버 시작 시 감시 시작
+    for route in router.routes:
+        print(f" {route.path} -> {route.methods}")
 
 @app.on_event("shutdown")
 def on_shutdown():
