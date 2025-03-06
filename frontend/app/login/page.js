@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { login } from "../../api/auth";
+import { useAlert } from "../../context/AlertContext";
 import { Container, Form, Button, Card, Row, Col } from "react-bootstrap";
 import styles from "./page.module.css";
 
 export default function Login() {
+  const showAlert = useAlert();
   const [formData, setFormData] = useState({ email: "", password: "" });
 
   const handleChange = (e) => {
@@ -17,10 +19,11 @@ export default function Login() {
     const result = await login(formData);
 
     if (result.error) {
-      alert(`로그인 실패: ${result.error}`);
+      showAlert("error", "로그인 실패", result.error);
     } else {
-      alert(`로그인 성공! 환영합니다, ${result.user.username}`);
-      window.location.href = "/";
+      showAlert("success", "로그인 성공!", `환영합니다, ${result.user.username}`).then(() => {
+        window.location.href = "/";
+      });
     }
   };
 

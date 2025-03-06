@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from ..core.database import get_db
@@ -6,7 +7,7 @@ from ..core.security import get_password_hash, verify_password, create_access_to
 from pydantic import BaseModel
 from datetime import timedelta
 from fastapi.security import OAuth2PasswordBearer
-import os
+
 
 router = APIRouter()
 
@@ -30,12 +31,19 @@ class UserLogin(BaseModel):
 # 회원가입 API
 @router.post("/signup")
 async def signup(user: UserCreate, db: Session = Depends(get_db)):
-    existing_user = db.query(User).filter(User.email == user.email).first()
-    if existing_user:
+    # 이메일을 소문자로 변환
+    email_lower = user.email.lower()
+    existing_email = db.query(User).filter(User.email == email_lower).first()
+
+    if existing_email:
         raise HTTPException(status_code=400, detail="이미 존재하는 이메일입니다.")
 
-    hashed_password = get_password_hash(user.password)  # 비밀번호 해싱
-    new_user = User(username=user.username, email=user.email, hashed_password=hashed_password)
+    existing_username = db.query(User).filter(User.username == user.username).first()
+    if existing_username:
+        raise HTTPException(status_code=400, detail="이미 존재하는 사용자 이름입니다.")
+
+    hashed_password = get_password_hash(user.password)
+    new_user = User(username=user.username, email=email_lower, hashed_password=hashed_password)
 
     db.add(new_user)
     db.commit()
@@ -50,16 +58,35 @@ async def signup(user: UserCreate, db: Session = Depends(get_db)):
         }
     }
 
-# 로그인 API (JWT 토큰 반환)
+
+
 @router.post("/login")
 async def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if not db_user or not verify_password(user.password, db_user.hashed_password):
+
+    # 이메일을 소문자로 변환
+    email_lower = user.email.lower()
+    db_user = db.query(User).filter(User.email == email_lower).first()
+
+    # 1. DB에서 유저가 조회되는지 확인
+    if not db_user:
+        print(f"[DEBUG] 유저를 찾을 수 없음: {user.email}")
         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 잘못되었습니다.")
 
-    # JWT 토큰 생성
+    print(f" [DEBUG] 유저 찾음: {db_user.username}")
+    print(f" [DEBUG] 저장된 해시된 비밀번호: {db_user.hashed_password}")
+
+    # 2. 비밀번호 검증 과정 로그 추가
+    is_password_valid = verify_password(user.password, db_user.hashed_password)
+    print(f" [DEBUG] 비밀번호 검증 결과: {is_password_valid}")
+
+    if not is_password_valid:
+        raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 잘못되었습니다.")
+
+    # 3. JWT 토큰 생성 과정 로그 추가
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(data={"sub": db_user.email}, expires_delta=access_token_expires)
+
+    print(f" [DEBUG] 생성된 JWT 토큰: {access_token}")
 
     return {
         "message": "로그인 성공!",
@@ -67,15 +94,47 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
         "token_type": "bearer",
         "user": {"id": db_user.id, "username": db_user.username}
     }
+#
+# # 로그인 API (JWT 토큰 반환)
+# @router.post("/login")
+# async def login(user: UserLogin, db: Session = Depends(get_db)):
+#     db_user = db.query(User).filter(User.email == user.email).first()
+#     if not db_user or not verify_password(user.password, db_user.hashed_password):
+#         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 잘못되었습니다.")
+#
+#     # JWT 토큰 생성
+#     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+#     access_token = create_access_token(data={"sub": db_user.email}, expires_delta=access_token_expires)
+#
+#     return {
+#         "message": "로그인 성공!",
+#         "access_token": access_token,
+#         "token_type": "bearer",
+#         "user": {"id": db_user.id, "username": db_user.username}
+#     }
 
-# JWT 토큰 검증 API 추가
 @router.post("/verify-token")
 async def verify_token(token: str = Depends(oauth2_scheme)):
+    print(f"[DEBUG] 받은 토큰: {token}")
+
     payload = decode_access_token(token)
     if not payload:
+        print("[DEBUG] 유효하지 않은 토큰")
         raise HTTPException(status_code=401, detail="유효하지 않거나 만료된 토큰입니다.")
 
+    print(f"[DEBUG] 토큰 해독 완료: {payload}")
+
     return {"message": "토큰이 유효합니다.", "user": payload["sub"]}
+
+# # JWT 토큰 검증 API 추가
+# @router.post("/verify-token")
+# async def verify_token(token: str = Depends(oauth2_scheme)):
+#     payload = decode_access_token(token)
+#     if not payload:
+#         raise HTTPException(status_code=401, detail="유효하지 않거나 만료된 토큰입니다.")
+#
+#     return {"message": "토큰이 유효합니다.", "user": payload["sub"]}
+
 
 # 로그아웃 API (클라이언트에서 토큰 삭제)
 @router.post("/logout")

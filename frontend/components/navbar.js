@@ -35,7 +35,7 @@ export default function CustomNavbar() {
     <Navbar expand="lg" className={styles.navbar}>
       <Container>
         <Navbar.Brand as={Link} href="/" className={styles.brand}>
-          🚀 Quiz Master
+          🚀 Coding Quiz Master
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="navbar-nav" className={styles.toggle} />
         <Navbar.Collapse id="navbar-nav">
