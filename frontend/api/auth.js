@@ -40,7 +40,7 @@ export const login = async (userData) => {
   }
 };
 
-// ✅ 토큰 검증 API
+// 토큰 검증 API
 export const verifyToken = async () => {
   const token = localStorage.getItem("token");
   if (!token) return { error: "토큰 없음" };
@@ -62,7 +62,7 @@ export const verifyToken = async () => {
   }
 };
 
-// ✅ 로그아웃 (프론트에서만 처리)
+// 로그아웃 (프론트에서만 처리)
 export const logout = async () => {
   localStorage.removeItem("token");
   return { message: "로그아웃 완료" };

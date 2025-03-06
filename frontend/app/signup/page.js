@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { signup } from "../../api/auth";
+import { useAlert } from "../../context/AlertContext";
 import { Container, Form, Button, Card, Row, Col } from "react-bootstrap";
 import styles from "./page.module.css";
 
 export default function Signup() {
+  const showAlert = useAlert();
   const [formData, setFormData] = useState({ username: "", email: "", password: "" });
 
   const handleChange = (e) => {
@@ -17,10 +19,12 @@ export default function Signup() {
     const result = await signup(formData);
 
     if (result.error) {
-      alert(`회원가입 실패: ${result.error}`);
+      showAlert("error", "회원가입 실패", result.error);
     } else {
-      alert(`회원가입 성공! 환영합니다, ${result.user.username}`);
-      window.location.href = "/login";
+      showAlert("success", "회원가입 성공!", `환영합니다, ${result.user.username}!`);
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 2000);
     }
   };
 

@@ -12,9 +12,11 @@ load_dotenv()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT 설정
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key")  # 기본값 설정
+# 기본값 설정
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 토큰 유효 시간 (30분)
+# 토큰 유효 시간 (30분)
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 def get_password_hash(password: str) -> str:
     """비밀번호를 해싱하여 반환"""
@@ -27,6 +29,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """JWT 액세스 토큰 생성"""
     to_encode = data.copy()
+    # 이메일을 소문자로 변환
+    if "sub" in to_encode:
+        to_encode["sub"] = to_encode["sub"].lower()
+
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
