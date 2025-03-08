@@ -14,6 +14,6 @@ class Quiz(Base):
     # 퀴즈 질문
     question = Column(String, nullable=False)
     # 질문에 대한 설명 또는 해설
-    explanation = Column(String, nullable=True)
+    explanation = Column(String, nullable=False)
     # 퀴즈 정답
     answer = Column(String, nullable=False)
