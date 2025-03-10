@@ -10,11 +10,12 @@ import { Container, Card, Button, Spinner } from "react-bootstrap";
 import styles from "./page.module.css";
 
 export default function QuizPage() {
-  const [quizzes, setQuizzes] = useState([]);
-  const [answers, setAnswers] = useState({});
+  const [quizzes, setQuizzes] = useState([]);  // 퀴즈 리스트
+  const [answers, setAnswers] = useState({});  // 사용자가 입력한 정답
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [results, setResults] = useState({});  // 정답 여부 저장
   const router = useRouter();
   const showAlert = useAlert();
 
@@ -60,22 +61,40 @@ export default function QuizPage() {
     setAnswers({ ...answers, [quizId]: value });
   };
 
-  // 정답 제출 (검증)
+  // 정답 제출 함수 개선
   const handleSubmit = (event) => {
     event.preventDefault();
     let correctCount = 0;
+    let newResults = {};
+
     quizzes.forEach((quiz) => {
-      if (answers[quiz.id] && answers[quiz.id].toLowerCase() === quiz.answer.toLowerCase()) {
-        correctCount++;
+      if (answers[quiz.id]) {
+        const userAnswer = answers[quiz.id]
+          .trim() // 앞뒤 공백 제거
+          .replace(/\s+/g, " ") // 여러 개의 공백을 하나로
+          .replace(/[^a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ가-힣 ]/g, "") // 특수 문자 제거
+          .toLowerCase(); // 대소문자 무시
+
+        const correctAnswers = quiz.answer
+          .split("/") // 여러 정답 허용 (예: "Spring/스프링")
+          .map(ans => ans.trim().replace(/\s+/g, " ").replace(/[^a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ가-힣 ]/g, "").toLowerCase()); // 대소문자 무시
+
+        const isCorrect = correctAnswers.includes(userAnswer); // 정답 여부 체크
+
+        newResults[quiz.id] = isCorrect ? "correct" : "incorrect"; // 결과 저장
+
+        if (isCorrect) correctCount++;
       }
     });
+
+    setResults(newResults); // 정답 결과 저장
     showAlert("success", "퀴즈 결과", `🎉 ${correctCount}개의 정답을 맞췄습니다!`);
   };
 
   return (
     <Container className={`${styles.container} py-4`}>
       <Card className="shadow p-4">
-        <Card.Title className="text-center fs-2 fw-bold text-primary">🚀 퀴즈 페이지</Card.Title>
+        <Card.Title className="text-center fs-2 fw-bold text-primary">코딩 퀴즈</Card.Title>
         {isLoading ? (
           <div className="text-center py-3">
             <Spinner animation="border" variant="primary" />
@@ -91,6 +110,7 @@ export default function QuizPage() {
                 quiz={quiz}
                 value={answers[quiz.id] || ""}
                 onChange={handleAnswerChange}
+                isCorrect={results[quiz.id]}
               />
             ))}
             <div className="text-center mt-4">
