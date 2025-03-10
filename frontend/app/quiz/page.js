@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getQuizData } from "../../api/quiz";
+import { getQuizData, submitQuizScore } from "../../api/quiz";
 import { verifyToken } from "../../api/auth";
 import { useAlert } from "../../context/AlertContext";
 import QuizCard from "../../components/quizcard";
@@ -10,40 +10,43 @@ import { Container, Card, Button, Spinner } from "react-bootstrap";
 import styles from "./page.module.css";
 
 export default function QuizPage() {
-  const [quizzes, setQuizzes] = useState([]);  // 퀴즈 리스트
-  const [answers, setAnswers] = useState({});  // 사용자가 입력한 정답
+  const [quizzes, setQuizzes] = useState([]);
+  const [answers, setAnswers] = useState(() => JSON.parse(localStorage.getItem("quizAnswers")) || {});
+  const [results, setResults] = useState(() => JSON.parse(localStorage.getItem("quizResults")) || {});
+  const [correctCount, setCorrectCount] = useState(() => JSON.parse(localStorage.getItem("quizCorrectCount")) || 0);
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [results, setResults] = useState({});  // 정답 여부 저장
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const quizzesPerPage = 5;
   const router = useRouter();
   const showAlert = useAlert();
 
   useEffect(() => {
-    checkLoginStatus();
-    fetchQuizData();
+    const init = async () => {
+      await checkLoginStatus();
+      await fetchQuizData();
+    };
+    init();
   }, []);
 
-  // 로그인 상태 확인
   const checkLoginStatus = async () => {
     const result = await verifyToken();
-    console.log("verifyToken 응답:", result);
-
     if (result && !result.error) {
       setIsLoggedIn(true);
     } else {
       setIsLoggedIn(false);
       showAlert("warning", "로그인 필요", "퀴즈를 풀려면 먼저 로그인해야 합니다.").then(() => {
-        router.push("/login"); // 로그인 페이지로 이동
+        router.push("/login");
       });
     }
   };
 
-  // 퀴즈 데이터 불러오기
   const fetchQuizData = async () => {
     try {
       const result = await getQuizData();
-      console.log("getQuizData 응답:", result);
       if (result && result.data) {
         setQuizzes(result.data);
       } else {
@@ -56,40 +59,94 @@ export default function QuizPage() {
     }
   };
 
-  // 사용자 입력 업데이트
+  const indexOfLastQuiz = currentPage * quizzesPerPage;
+  const indexOfFirstQuiz = indexOfLastQuiz - quizzesPerPage;
+  const currentQuizzes = quizzes.slice(indexOfFirstQuiz, indexOfLastQuiz);
+  const isLastPage = indexOfLastQuiz >= quizzes.length;
+
   const handleAnswerChange = (quizId, value) => {
-    setAnswers({ ...answers, [quizId]: value });
+    setAnswers((prev) => {
+      const updatedAnswers = { ...prev, [quizId]: value };
+      localStorage.setItem("quizAnswers", JSON.stringify(updatedAnswers));
+      return updatedAnswers;
+    });
   };
 
-  // 정답 제출 함수 개선
-  const handleSubmit = (event) => {
+  const handleCheckAnswer = (quizId) => {
+    const userAnswer = answers[quizId]?.trim()
+      .replace(/\s+/g, " ")
+      .replace(/[^a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ가-힣 ]/g, "")
+      .toLowerCase();
+
+    const correctAnswers = quizzes
+      .find((quiz) => quiz.id === quizId)
+      ?.answer.split("/")
+      .map((ans) => ans.trim().replace(/\s+/g, " ").replace(/[^a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ가-힣 ]/g, "").toLowerCase());
+
+    const isCorrect = correctAnswers?.includes(userAnswer);
+
+    setResults((prev) => {
+      const updatedResults = { ...prev, [quizId]: isCorrect ? "correct" : "incorrect" };
+      localStorage.setItem("quizResults", JSON.stringify(updatedResults));
+      return updatedResults;
+    });
+
+    setCorrectCount((prev) => {
+      const newCount = isCorrect ? prev + 1 : Math.max(prev - 1, 0);
+      localStorage.setItem("quizCorrectCount", JSON.stringify(newCount));
+      return newCount;
+    });
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    let correctCount = 0;
-    let newResults = {};
+
+    let totalCorrect = 0;
+    let finalResults = {};
+    let incorrectList = [];
 
     quizzes.forEach((quiz) => {
-      if (answers[quiz.id]) {
-        const userAnswer = answers[quiz.id]
-          .trim() // 앞뒤 공백 제거
-          .replace(/\s+/g, " ") // 여러 개의 공백을 하나로
-          .replace(/[^a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ가-힣 ]/g, "") // 특수 문자 제거
-          .toLowerCase(); // 대소문자 무시
+      const userAnswer = answers[quiz.id]?.trim()
+        .replace(/\s+/g, " ")
+        .replace(/[^a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ가-힣 ]/g, "")
+        .toLowerCase();
 
-        const correctAnswers = quiz.answer
-          .split("/") // 여러 정답 허용 (예: "Spring/스프링")
-          .map(ans => ans.trim().replace(/\s+/g, " ").replace(/[^a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ가-힣 ]/g, "").toLowerCase()); // 대소문자 무시
+      const correctAnswers = quiz.answer.split("/")
+        .map((ans) => ans.trim().replace(/\s+/g, " ").replace(/[^a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ가-힣 ]/g, "").toLowerCase());
 
-        const isCorrect = correctAnswers.includes(userAnswer); // 정답 여부 체크
+      const isCorrect = correctAnswers.includes(userAnswer);
+      finalResults[quiz.id] = isCorrect ? "correct" : "incorrect";
 
-        newResults[quiz.id] = isCorrect ? "correct" : "incorrect"; // 결과 저장
-
-        if (isCorrect) correctCount++;
+      if (isCorrect) {
+        totalCorrect++;
+      } else {
+        incorrectList.push({
+          question: quiz.question,
+          userAnswer: answers[quiz.id] || "(미입력)",
+          correctAnswer: quiz.answer
+        });
       }
     });
 
-    setResults(newResults); // 정답 결과 저장
-    showAlert("success", "퀴즈 결과", `🎉 ${correctCount}개의 정답을 맞췄습니다!`);
+    const totalQuestions = quizzes.length;
+    const scoreData = { correct: totalCorrect, total: totalQuestions, score: (totalCorrect / totalQuestions) * 100 };
+
+    // 점수 저장 후 콘솔 확인
+    localStorage.setItem("quizScore", JSON.stringify(scoreData));
+    localStorage.setItem("quizResults", JSON.stringify(incorrectList));
+
+    const result = await submitQuizScore(scoreData);
+
+    if (!result.error) {
+      router.push("/result");
+    } else {
+      showAlert("danger", "오류 발생", "점수 저장 실패");
+    }
   };
+
+
+  const nextPage = () => setCurrentPage((prev) => prev + 1);
+  const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
 
   return (
     <Container className={`${styles.container} py-4`}>
@@ -100,25 +157,38 @@ export default function QuizPage() {
             <Spinner animation="border" variant="primary" />
             <p className="mt-2">로딩 중...</p>
           </div>
-        ) : error ? (
-          <p className="text-danger text-center">{error}</p>
         ) : (
-          <form onSubmit={handleSubmit}>
-            {quizzes.map((quiz) => (
+          <>
+            {currentQuizzes.map((quiz) => (
               <QuizCard
                 key={quiz.id}
                 quiz={quiz}
                 value={answers[quiz.id] || ""}
                 onChange={handleAnswerChange}
+                onCheckAnswer={handleCheckAnswer}
                 isCorrect={results[quiz.id]}
               />
             ))}
+
+            {/* 페이지네이션 버튼 */}
             <div className="text-center mt-4">
-              <Button type="submit" className="w-50" variant="success">
-                제출하기
+              <Button onClick={prevPage} disabled={currentPage === 1} className="me-2">
+                이전
+              </Button>
+              <span> {currentPage} 페이지 </span>
+              <Button onClick={nextPage} disabled={indexOfLastQuiz >= quizzes.length} className="ms-2">
+                다음
               </Button>
             </div>
-          </form>
+
+            {isLastPage && (
+              <div className="text-center mt-4">
+                <Button type="submit" className="w-50" variant="success" onClick={handleSubmit} disabled={isSubmitting}>
+                  {isSubmitting ? "제출 중..." : "최종 제출하기"}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </Card>
     </Container>

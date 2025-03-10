@@ -26,26 +26,35 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """입력한 비밀번호가 해시된 비밀번호와 일치하는지 확인"""
     return pwd_context.verify(plain_password, hashed_password)
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """JWT 액세스 토큰 생성"""
-    to_encode = data.copy()
-    # 이메일을 소문자로 변환
-    if "sub" in to_encode:
-        to_encode["sub"] = to_encode["sub"].lower()
 
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+def create_access_token(user_id: int, email: str, expires_delta: timedelta = None):
+    to_encode = {"sub": email, "id": user_id}
+    expire = datetime.utcnow() + (expires_delta if expires_delta else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+
+    print(f"JWT 생성 - Payload: {to_encode}")  # 디버깅 로그 추가
+
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def decode_access_token(token: str) -> Optional[dict]:
-    """JWT 토큰을 디코딩하여 데이터 반환"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
+
+        print(f"🔹 JWT Payload: {payload}")  # 디버깅용 로그
+
+        if not isinstance(payload, dict):
+            print("❌ JWT Payload가 딕셔너리 타입이 아님")
+            return None
+
+        if "sub" not in payload or "id" not in payload:
+            print(f"❌ JWT에 'sub' 또는 'id' 키 없음, Payload: {payload}")
+            return None
+
+        return {"id": payload["id"], "email": payload["sub"]}
+
     except jwt.ExpiredSignatureError:
-        print("토큰이 만료되었습니다.")
+        print("❌ 토큰이 만료되었습니다.")
         return None
     except jwt.InvalidTokenError:
-        print("유효하지 않은 토큰입니다.")
+        print("❌ 유효하지 않은 토큰입니다.")
         return None
