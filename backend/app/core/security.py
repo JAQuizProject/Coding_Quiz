@@ -40,8 +40,6 @@ def decode_access_token(token: str) -> Optional[dict]:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
-        print(f"🔹 JWT Payload: {payload}")  # 디버깅용 로그
-
         if not isinstance(payload, dict):
             print("❌ JWT Payload가 딕셔너리 타입이 아님")
             return None

@@ -7,7 +7,7 @@ import { verifyToken } from "../../api/auth";
 import { useAlert } from "../../context/AlertContext";
 import QuizCard from "../../components/quizcard";
 import CategorySelector from "../../components/categorySelector";
-import { Container, Card, Button, Spinner } from "react-bootstrap";
+import { Container, Card, Button, Spinner, Pagination } from "react-bootstrap";
 import styles from "./page.module.css";
 
 // localStorage 값을 안전하게 가져오는 함수
@@ -76,10 +76,17 @@ export default function QuizPage() {
     }
   };
 
+  const totalQuizzes = quizzes.length;
+  const totalPages = Math.ceil(totalQuizzes / quizzesPerPage);
   const indexOfLastQuiz = currentPage * quizzesPerPage;
   const indexOfFirstQuiz = indexOfLastQuiz - quizzesPerPage;
   const currentQuizzes = quizzes.slice(indexOfFirstQuiz, indexOfLastQuiz);
-  const isLastPage = indexOfLastQuiz >= quizzes.length;
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   const handleAnswerChange = (quizId, value) => {
     setAnswers((prev) => {
@@ -128,7 +135,12 @@ export default function QuizPage() {
       });
 
       const totalQuestions = quizzes.length;
-      const scoreData = { correct: totalCorrect, total: totalQuestions, score: (totalCorrect / totalQuestions) * 100 };
+      const scoreData = {
+        correct: totalCorrect,
+        total: totalQuestions,
+        score: (totalCorrect / totalQuestions) * 100,
+        category: selectedCategory || "전체"
+      };
 
       localStorage.setItem("quizScore", JSON.stringify(scoreData));
       localStorage.setItem("quizResults", JSON.stringify(incorrectList));
@@ -175,23 +187,41 @@ export default function QuizPage() {
               />
             ))}
 
-            <div className="text-center mt-4">
-              <Button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="me-2">
-                이전
-              </Button>
-              <span> {currentPage} 페이지 </span>
-              <Button onClick={() => setCurrentPage((prev) => prev + 1)} disabled={isLastPage} className="ms-2">
-                다음
-              </Button>
-            </div>
-
-            {isLastPage && (
-              <div className="text-center mt-4">
-                <Button type="submit" className="w-50" variant="success" onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? "제출 중..." : "최종 제출하기"}
+            {currentPage === totalPages && (
+              <div className="text-end mb-3">
+                <Button type="submit" variant="success" size="sm" onClick={handleSubmit} disabled={isSubmitting}>
+                  {isSubmitting ? "제출 중..." : "제출하기"}
                 </Button>
               </div>
             )}
+
+            {/* 페이지네이션 */}
+            <div className="text-center mt-4">
+              <Pagination>
+                {/* 이전 버튼 */}
+                <Pagination.Prev
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                />
+
+                {/* 페이지 숫자 버튼 */}
+                {[...Array(totalPages)].map((_, i) => (
+                  <Pagination.Item
+                    key={i + 1}
+                    active={i + 1 === currentPage}
+                    onClick={() => handlePageChange(i + 1)}
+                  >
+                    {i + 1}
+                  </Pagination.Item>
+                ))}
+
+                {/* 다음 버튼 */}
+                <Pagination.Next
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                />
+              </Pagination>
+            </div>
           </>
         )}
       </Card>

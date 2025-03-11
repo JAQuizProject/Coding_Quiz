@@ -17,15 +17,12 @@ export default function CategorySelector({ onSelectCategory, selectedCategory })
 
   return (
     <div className={styles.categoryContainer}>
-      <strong>카테고리 선택: </strong>
       {categories.length > 0 ? (
         categories.map((category) => (
           <button
             key={category}
             onClick={() => onSelectCategory(category)}
-            className={`${styles.categoryBtn} ${
-              selectedCategory === category ? styles.selected : ""
-            }`}
+            className={`${styles.categoryBtn} ${selectedCategory === category ? styles.selected : ""}`}
           >
             {category}
           </button>

@@ -68,25 +68,36 @@ def get_categories(db: Session = Depends(get_db)):
         print(f"❌ 카테고리 조회 중 오류 발생: {str(e)}")
         raise HTTPException(status_code=500, detail=f"카테고리 조회 오류: {str(e)}")
 
-# 새로운 API: 퀴즈 점수 저장 (JWT 인증 필요)
+# 새로운 API: 퀴즈 점수 저장 (덮어쓰기 방식)
 @router.post("/submit")
 def submit_quiz_score(score_data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
-    사용자의 퀴즈 점수를 데이터베이스에 저장
+    사용자의 퀴즈 점수를 덮어씌우며 저장 (같은 user_id + category가 존재하면 UPDATE)
     """
-    print("🔹 사용자 정보:", user.id, user.username)  # 디버깅용 로그 추가
+    print("사용자 정보:", user.id, user.username)
 
     try:
+        category = score_data.get("category", "전체")
         correct_count = score_data.get("correct", 0)
         total_questions = score_data.get("total", 10)
-
         score_percentage = (correct_count / total_questions) * 100
 
-        new_score = Score(user_id=user.id, score=int(score_percentage))  # user.id 사용
-        db.add(new_score)
-        db.commit()
+        # 1. 기존 점수 조회
+        existing_score = db.query(Score).filter(Score.user_id == user.id, Score.category == category).first()
 
-        return {"message": "점수 저장 성공", "score": score_percentage}
+        if existing_score:
+            # 2. 기존 점수가 있으면 업데이트 (UPDATE)
+            existing_score.score = int(score_percentage)
+            db.commit()
+            message = "기존 점수 업데이트 성공"
+        else:
+            # 3. 기존 점수가 없으면 새롭게 추가 (INSERT)
+            new_score = Score(user_id=user.id, category=category, score=int(score_percentage))
+            db.add(new_score)
+            db.commit()
+            message = "새 점수 저장 성공"
+
+        return {"message": message, "score": score_percentage}
 
     except Exception as e:
         print(f"❌ 점수 저장 중 오류 발생: {str(e)}")
