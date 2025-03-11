@@ -30,6 +30,16 @@ export default function QuizResultPage() {
     }
   }, []);
 
+  const handleRetry = () => {
+    // 기존 데이터 삭제
+    localStorage.removeItem("quizScore");
+    localStorage.removeItem("quizResults");
+    localStorage.removeItem("quizAnswers");
+
+    // 퀴즈 페이지로 이동
+    router.push("/quiz");
+  };
+
   return (
     <Container className="py-5">
       <Card className="shadow p-4 text-center">
@@ -59,15 +69,8 @@ export default function QuizResultPage() {
 
             {/* 다시 풀기 버튼 */}
             <div className="mt-4">
-              <Button variant="primary" onClick={() => {
-                  // 기존 데이터 삭제 후 이동
-                  localStorage.removeItem("quizScore");
-                  localStorage.removeItem("quizResults");
-                  localStorage.removeItem("quizAnswers");
-
-                  router.push("/quiz");
-                }}>
-                  다시 풀기
+              <Button variant="primary" onClick={handleRetry}>
+                다시 풀기
               </Button>
             </div>
           </>

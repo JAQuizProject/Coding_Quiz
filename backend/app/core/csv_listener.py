@@ -26,7 +26,6 @@ def is_db_empty():
 
 # CSV 파일을 읽어 데이터베이스에 저장하는 함수
 def store_csv_to_db(CSV_FILE_PATH):
-    """CSV 파일을 읽어와 데이터베이스에 저장"""
     if not os.path.exists(CSV_FILE_PATH):
         print(f"CSV 파일을 찾을 수 없음: {CSV_FILE_PATH}")
         return
@@ -38,36 +37,36 @@ def store_csv_to_db(CSV_FILE_PATH):
                 csv_reader = csv.reader(file)
                 headers = next(csv_reader, None)
 
-                if not headers or len(headers) < 4:
+                if not headers or len(headers) < 5:
                     print(f"CSV 형식이 잘못됨: {CSV_FILE_PATH}")
                     return
 
-                for row_number, row in enumerate(csv_reader, start=2):  # 2번째 줄부터 시작 (1번째는 헤더)
-                    # 빈 행이면 건너뜀
+                for row_number, row in enumerate(csv_reader, start=2):
                     if not any(row):
                         print(f"⚠ [행 {row_number}] 빈 행 건너뜀")
                         continue
 
-                    if len(row) < 4:
+                    if len(row) < 5:
                         print(f"⚠ [행 {row_number}] 잘못된 데이터 행 건너뜀: {row}")
                         continue
 
                     try:
-                        quiz_id = int(row[0])  # ID는 정수로 변환
+                        quiz_id = int(row[0])
                         question = row[1]
                         explanation = row[2]
-                        answer = str(row[3])  # answer를 문자열로 변환하여 저장
+                        answer = str(row[3])
+                        category = row[4]  # ✅ 카테고리 추가
 
                         cursor.execute('''
-                        REPLACE INTO quizzes (id, question, explanation, answer)
-                        VALUES (?, ?, ?, ?)
-                        ''', (quiz_id, question, explanation, answer))
+                        REPLACE INTO quizzes (id, question, explanation, answer, category)
+                        VALUES (?, ?, ?, ?, ?)
+                        ''', (quiz_id, question, explanation, answer, category))
                     except Exception as e:
                         print(f"❌ [행 {row_number}] 데이터 변환 오류: {row}, 오류: {str(e)}")
-                        continue  # 오류 발생한 행은 건너뜀
+                        continue
 
             conn.commit()
-        print(f"✅ CSV 파일 {CSV_FILE_PATH} 데이터 저장 완료!")
+        print(f"✅ CSV 데이터 저장 완료!")
     except Exception as e:
         print(f"🚨 CSV 처리 중 오류 발생: {str(e)}")
 

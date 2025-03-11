@@ -29,15 +29,22 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Security(securi
 
 # 퀴즈 데이터 가져오기 API (JWT 인증 필요)
 @router.get("/get")
-def get_quiz_data(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_quiz_data(category: str = None, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     """
-    JWT 토큰을 검증한 후, 데이터베이스에서 퀴즈 목록을 가져옴.
+    JWT 토큰을 검증한 후, 특정 카테고리의 퀴즈 목록을 가져옴.
     """
     if not user:
         raise HTTPException(status_code=401, detail="로그인이 필요한 서비스입니다.")
 
     try:
-        quizzes = db.execute(text("SELECT id, question, explanation, answer FROM quizzes")).fetchall()
+        if category:  # 특정 카테고리의 퀴즈만 가져오기
+            query = text("SELECT id, question, explanation, answer FROM quizzes WHERE category = :category")
+            params = {"category": category}
+        else:  # 모든 퀴즈 가져오기
+            query = text("SELECT id, question, explanation, answer FROM quizzes")
+            params = {}
+
+        quizzes = db.execute(query, params).fetchall()
         quiz_list = [{"id": q[0], "question": q[1], "explanation": q[2], "answer": q[3]} for q in quizzes]
 
         return {"message": "퀴즈 데이터 조회 성공", "data": quiz_list}
@@ -46,6 +53,20 @@ def get_quiz_data(user: dict = Depends(get_current_user), db: Session = Depends(
         print(f"❌ 데이터베이스 오류 발생: {str(e)}")
         raise HTTPException(status_code=500, detail=f"데이터베이스 오류: {str(e)}")
 
+# 카테고리 목록을 가져오는 API
+@router.get("/categories")
+def get_categories(db: Session = Depends(get_db)):
+    """
+    데이터베이스에서 사용 가능한 카테고리 목록을 가져옴.
+    """
+    try:
+        categories = db.execute(text("SELECT DISTINCT category FROM quizzes")).fetchall()
+        category_list = [c[0] for c in categories if c[0]]  # None 값 제외
+        return {"message": "카테고리 조회 성공", "data": category_list}
+
+    except Exception as e:
+        print(f"❌ 카테고리 조회 중 오류 발생: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"카테고리 조회 오류: {str(e)}")
 
 # 새로운 API: 퀴즈 점수 저장 (JWT 인증 필요)
 @router.post("/submit")
