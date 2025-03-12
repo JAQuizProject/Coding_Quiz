@@ -84,7 +84,7 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
 
     # 3. JWT 토큰 생성 과정 로그 추가
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": db_user.email}, expires_delta=access_token_expires)
+    access_token = create_access_token(user_id=db_user.id, email=db_user.email, expires_delta=access_token_expires)
 
     print(f" [DEBUG] 생성된 JWT 토큰: {access_token}")
 
@@ -94,46 +94,20 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
         "token_type": "bearer",
         "user": {"id": db_user.id, "username": db_user.username}
     }
-#
-# # 로그인 API (JWT 토큰 반환)
-# @router.post("/login")
-# async def login(user: UserLogin, db: Session = Depends(get_db)):
-#     db_user = db.query(User).filter(User.email == user.email).first()
-#     if not db_user or not verify_password(user.password, db_user.hashed_password):
-#         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 잘못되었습니다.")
-#
-#     # JWT 토큰 생성
-#     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-#     access_token = create_access_token(data={"sub": db_user.email}, expires_delta=access_token_expires)
-#
-#     return {
-#         "message": "로그인 성공!",
-#         "access_token": access_token,
-#         "token_type": "bearer",
-#         "user": {"id": db_user.id, "username": db_user.username}
-#     }
 
 @router.post("/verify-token")
 async def verify_token(token: str = Depends(oauth2_scheme)):
     print(f"[DEBUG] 받은 토큰: {token}")
 
     payload = decode_access_token(token)
-    if not payload:
-        print("[DEBUG] 유효하지 않은 토큰")
+
+    if not payload or "id" not in payload or "email" not in payload:
+        print(f"[DEBUG] 토큰 검증 실패 - payload: {payload}")
         raise HTTPException(status_code=401, detail="유효하지 않거나 만료된 토큰입니다.")
 
     print(f"[DEBUG] 토큰 해독 완료: {payload}")
 
-    return {"message": "토큰이 유효합니다.", "user": payload["sub"]}
-
-# # JWT 토큰 검증 API 추가
-# @router.post("/verify-token")
-# async def verify_token(token: str = Depends(oauth2_scheme)):
-#     payload = decode_access_token(token)
-#     if not payload:
-#         raise HTTPException(status_code=401, detail="유효하지 않거나 만료된 토큰입니다.")
-#
-#     return {"message": "토큰이 유효합니다.", "user": payload["sub"]}
+    return {"message": "토큰이 유효합니다.", "user": payload["email"]}
 
 
 # 로그아웃 API (클라이언트에서 토큰 삭제)

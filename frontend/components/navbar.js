@@ -42,6 +42,7 @@ export default function CustomNavbar() {
           <Nav className="ms-auto">
             <Nav.Link as={Link} href="/" className={styles.navLink}>Home</Nav.Link>
             <Nav.Link as={Link} href="/quiz" className={styles.navLink}>Quiz</Nav.Link>
+            <Nav.Link as={Link} href="/ranking" className={styles.navLink}>Ranking</Nav.Link>
             {isLoggedIn ? (
               <>
                 <Nav.Link disabled className={styles.username}>👤 {username}</Nav.Link>

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
 from ..core.database import Base
 
 class User(Base):
@@ -12,7 +13,9 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)  # 해싱된 비밀번호 저장
 
+    scores = relationship("Score", back_populates="user", cascade="all, delete-orphan")  # User <-> Score 관계 설정
+
     def set_password(self, password: str):
         """비밀번호를 해싱하여 저장"""
-        from ..core.security import get_password_hash  # 🔥 여기서만 import
+        from ..core.security import get_password_hash  # 여기서만 import
         self.hashed_password = get_password_hash(password)
