@@ -4,3 +4,6 @@ sqlalchemy
 databases
 pydantic
 watchdog
+python-dotenv
+passlib[bcrypt]
+pyjwt[crypto]
