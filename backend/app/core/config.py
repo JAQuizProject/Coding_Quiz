@@ -21,7 +21,9 @@ class Config:
 
     # 실제 사용할 DATABASE_URL을 자동 선택
     ENV = os.getenv("ENV", "development")  # 기본값: 개발 환경
+    print(f"ENV 설정값: {ENV}")
     DATABASE_URL = DATABASE_URL_PROD if ENV == "production" else DATABASE_URL_DEV
+    print(f"사용할 DATABASE_URL: {DATABASE_URL}")
 
     SECRET_KEY: str = os.getenv("SECRET_KEY", "mysecretkey")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
