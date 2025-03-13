@@ -1,11 +1,11 @@
 import os
 import csv
-import sqlite3
+from sqlalchemy import text
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from ..core.config import config
+from ..core.database import SessionLocal
 
-# SQLite DB 연결 경로
-DATABASE_PATH = "quiz_app.db"
 # 감시할 CSV 파일 경로
 CSV_FILE_PATH = "csv_files/quiz_data.csv"
 
@@ -14,15 +14,13 @@ observer = None  # 감시 객체 전역 변수
 # 데이터베이스가 비어 있는지 확인하는 함수
 def is_db_empty():
     """데이터베이스에 데이터가 있는지 확인"""
-    try:
-        with sqlite3.connect(DATABASE_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM quizzes")
-            count = cursor.fetchone()[0]
-            return count == 0  # 데이터가 없으면 True 반환
-    except sqlite3.Error as e:
-        print(f"DB 확인 중 오류 발생: {str(e)}")
-        return True  # 오류 발생 시 데이터를 저장하도록 처리
+    with SessionLocal() as session:
+        try:
+            result = session.execute(text("SELECT COUNT(*) FROM quizzes")).fetchone()
+            return result[0] == 0 if result else True
+        except Exception as e:
+            print(f"🚨 DB 확인 중 오류 발생: {str(e)}")
+            return True  # 오류 발생 시 데이터를 저장하도록 처리
 
 # CSV 파일을 읽어 데이터베이스에 저장하는 함수
 def store_csv_to_db(CSV_FILE_PATH):
@@ -31,8 +29,7 @@ def store_csv_to_db(CSV_FILE_PATH):
         return
 
     try:
-        with sqlite3.connect(DATABASE_PATH) as conn:
-            cursor = conn.cursor()
+        with SessionLocal() as session:
             with open(CSV_FILE_PATH, 'r', encoding='utf-8') as file:
                 csv_reader = csv.reader(file)
                 headers = next(csv_reader, None)
@@ -55,17 +52,36 @@ def store_csv_to_db(CSV_FILE_PATH):
                         question = row[1]
                         explanation = row[2]
                         answer = str(row[3])
-                        category = row[4]  # ✅ 카테고리 추가
+                        category = row[4]  # 카테고리 추가
 
-                        cursor.execute('''
-                        REPLACE INTO quizzes (id, question, explanation, answer, category)
-                        VALUES (?, ?, ?, ?, ?)
-                        ''', (quiz_id, question, explanation, answer, category))
+                        # SQLite와 PostgreSQL에서 각각 다르게 처리
+                        if "sqlite" in config.DATABASE_URL:
+                            session.execute(text('''
+                                INSERT OR REPLACE INTO quizzes (id, question, explanation, answer, category)
+                                VALUES (:id, :question, :explanation, :answer, :category)
+                            '''), {
+                                "id": quiz_id, "question": question,
+                                "explanation": explanation, "answer": answer, "category": category
+                            })
+                        else:  # PostgreSQL
+                            session.execute(text('''
+                                INSERT INTO quizzes (id, question, explanation, answer, category)
+                                VALUES (:id, :question, :explanation, :answer, :category)
+                                ON CONFLICT (id) DO UPDATE 
+                                SET question=EXCLUDED.question, 
+                                    explanation=EXCLUDED.explanation, 
+                                    answer=EXCLUDED.answer, 
+                                    category=EXCLUDED.category;
+                            '''), {
+                                "id": quiz_id, "question": question,
+                                "explanation": explanation, "answer": answer, "category": category
+                            })
+
                     except Exception as e:
                         print(f"❌ [행 {row_number}] 데이터 변환 오류: {row}, 오류: {str(e)}")
                         continue
 
-            conn.commit()
+            session.commit()
         print(f"✅ CSV 데이터 저장 완료!")
     except Exception as e:
         print(f"🚨 CSV 처리 중 오류 발생: {str(e)}")
@@ -79,8 +95,8 @@ class CsvFileListener(FileSystemEventHandler):
         if event.is_directory:
             return
         if event.src_path == self.CSV_FILE_PATH:
-            print(f"CSV 파일 {event.src_path} 가 수정되었습니다.")
-            print("DB에 저장을 시작합니다.")
+            print(f"📂 CSV 파일 {event.src_path} 가 수정되었습니다.")
+            print("🔄 DB에 저장을 시작합니다.")
             store_csv_to_db(event.src_path)
 
 # CSV 감시 시작 함수
@@ -92,16 +108,16 @@ def start_csv_listener():
 
         # 데이터베이스 확인 후 CSV 데이터 삽입 여부 결정
         if is_db_empty():
-            print("데이터베이스가 비어 있습니다. CSV 데이터를 불러옵니다...")
+            print("🛑 데이터베이스가 비어 있습니다. CSV 데이터를 불러옵니다...")
             store_csv_to_db(CSV_FILE_PATH)
         else:
-            print("데이터베이스에 기존 데이터가 존재합니다.")
+            print("✅ 데이터베이스에 기존 데이터가 존재합니다.")
 
         observer = Observer()
         event_handler = CsvFileListener(CSV_FILE_PATH)
         observer.schedule(event_handler, path=watch_folder, recursive=False)
         observer.start()
-        print(f"CSV 감시 시작됨... ({CSV_FILE_PATH})")
+        print(f"🚀 CSV 감시 시작됨... ({CSV_FILE_PATH})")
 
 # CSV 감시 중지 함수
 def stop_csv_listener():
@@ -109,4 +125,4 @@ def stop_csv_listener():
     if observer:
         observer.stop()
         observer.join()
-        print("CSV 감시가 중지되었습니다.")
+        print("🛑 CSV 감시가 중지되었습니다.")
