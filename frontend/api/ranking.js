@@ -1,7 +1,9 @@
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
 export async function getRanking(category = "전체") {
   try {
     // FastAPI 서버 주소로 요청 보내기
-    const response = await fetch(`http://localhost:8000/ranking/get?category=${encodeURIComponent(category)}`, {
+    const response = await fetch(`${BASE_URL}/ranking/get?category=${encodeURIComponent(category)}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
