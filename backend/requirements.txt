@@ -7,3 +7,4 @@ watchdog
 python-dotenv
 passlib[bcrypt]
 pyjwt[crypto]
+psycopg2-binary
