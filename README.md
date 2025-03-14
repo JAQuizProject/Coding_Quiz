@@ -228,8 +228,25 @@ npm run dev
 
 ---
 
-## 📌 개발자 정보
-| 이름 | 역할 | 주요 담당 업무 | GitHub                                        |
-|------|------|--------------|-----------------------------------------------|
-| **안제호** | 풀스택 개발 | **프론트엔드 개발 전반, 백엔드(User 관련 및 전반적 수정), 프론트엔드 배포** | [안제호: GitHub](https://github.com/JELKOV)      |
-| **장준희** | 백엔드 개발 | **CSV Listener 구현, 퀴즈 백엔드 API 개발, 백엔드 Docker 배포** | [장준희: GitHub](https://github.com/jejuorangee) |
+## 💌 개발자 정보
+
+### **👨‍💻 안제호 (JELKOV)**  
+- **역할:** 풀스택 개발  
+- **주요 작업:**  
+  - **프론트엔드 전체 개발** (Next.js 기반 UI/UX 설계 및 기능 구현)  
+  - **백업드 개발 (User, Ranking, Score 관련 API 및 수정)**  
+  - **프론트엔드 AWS EC2 및 PM2 설정 및 배포**  
+  - **CORS, 환경변수 (.env) 관리 및 최적화**  
+- **GitHub:** [jelkov](https://github.com/JELKOV)  
+
+---
+
+### **👨‍💻 장준희 (jejuorangee)**  
+- **역할:** 백엔드 개발  
+- **주요 작업:**  
+  - **FastAPI 기반 백업드 개발 (Quiz API 구현)**  
+  - **CSV Listener 구현 및 데이터 자동 업데이트 시스템 개발**  
+  - **백엔드 Docker 컨테이너화 및 AWS EC2 및 RDS 사용 배포**
+- **GitHub:** [jejuorangee](https://github.com/jejuorangee)  
+
+---
