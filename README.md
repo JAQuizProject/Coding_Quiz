@@ -234,7 +234,7 @@ npm run dev
 - **역할:** 풀스택 개발  
 - **주요 작업:**  
   - **프론트엔드 전체 개발** (Next.js 기반 UI/UX 설계 및 기능 구현)  
-  - **백업드 개발 (User, Ranking, Score 관련 API 및 수정)**  
+  - **백엔드 개발 (User, Ranking, Score 관련 API 및 수정)**  
   - **프론트엔드 AWS EC2 및 PM2 설정 및 배포**  
   - **CORS, 환경변수 (.env) 관리 및 최적화**  
 - **GitHub:** [jelkov](https://github.com/JELKOV)  
