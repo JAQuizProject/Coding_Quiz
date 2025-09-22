@@ -1,8 +1,10 @@
-import os
 import csv
+import os
+
 from sqlalchemy import text
-from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
 from ..core.config import config
 from ..core.database import SessionLocal
 
@@ -10,6 +12,7 @@ from ..core.database import SessionLocal
 CSV_FILE_PATH = "csv_files/quiz_data.csv"
 
 observer = None  # 감시 객체 전역 변수
+
 
 # 데이터베이스가 비어 있는지 확인하는 함수
 def is_db_empty():
@@ -22,6 +25,7 @@ def is_db_empty():
             print(f"🚨 DB 확인 중 오류 발생: {str(e)}")
             return True  # 오류 발생 시 데이터를 저장하도록 처리
 
+
 # CSV 파일을 읽어 데이터베이스에 저장하는 함수
 def store_csv_to_db(CSV_FILE_PATH):
     if not os.path.exists(CSV_FILE_PATH):
@@ -30,7 +34,7 @@ def store_csv_to_db(CSV_FILE_PATH):
 
     try:
         with SessionLocal() as session:
-            with open(CSV_FILE_PATH, 'r', encoding='utf-8') as file:
+            with open(CSV_FILE_PATH, "r", encoding="utf-8") as file:
                 csv_reader = csv.reader(file)
                 headers = next(csv_reader, None)
 
@@ -56,35 +60,50 @@ def store_csv_to_db(CSV_FILE_PATH):
 
                         # SQLite와 PostgreSQL에서 각각 다르게 처리
                         if "sqlite" in config.DATABASE_URL:
-                            session.execute(text('''
+                            session.execute(
+                                text("""
                                 INSERT OR REPLACE INTO quizzes (id, question, explanation, answer, category)
                                 VALUES (:id, :question, :explanation, :answer, :category)
-                            '''), {
-                                "id": quiz_id, "question": question,
-                                "explanation": explanation, "answer": answer, "category": category
-                            })
+                            """),
+                                {
+                                    "id": quiz_id,
+                                    "question": question,
+                                    "explanation": explanation,
+                                    "answer": answer,
+                                    "category": category,
+                                },
+                            )
                         else:  # PostgreSQL
-                            session.execute(text('''
+                            session.execute(
+                                text("""
                                 INSERT INTO quizzes (id, question, explanation, answer, category)
                                 VALUES (:id, :question, :explanation, :answer, :category)
-                                ON CONFLICT (id) DO UPDATE 
-                                SET question=EXCLUDED.question, 
-                                    explanation=EXCLUDED.explanation, 
-                                    answer=EXCLUDED.answer, 
+                                ON CONFLICT (id) DO UPDATE
+                                SET question=EXCLUDED.question,
+                                    explanation=EXCLUDED.explanation,
+                                    answer=EXCLUDED.answer,
                                     category=EXCLUDED.category;
-                            '''), {
-                                "id": quiz_id, "question": question,
-                                "explanation": explanation, "answer": answer, "category": category
-                            })
+                            """),
+                                {
+                                    "id": quiz_id,
+                                    "question": question,
+                                    "explanation": explanation,
+                                    "answer": answer,
+                                    "category": category,
+                                },
+                            )
 
                     except Exception as e:
-                        print(f"❌ [행 {row_number}] 데이터 변환 오류: {row}, 오류: {str(e)}")
+                        print(
+                            f"❌ [행 {row_number}] 데이터 변환 오류: {row}, 오류: {str(e)}"
+                        )
                         continue
 
             session.commit()
-        print(f"✅ CSV 데이터 저장 완료!")
+        print("✅ CSV 데이터 저장 완료!")
     except Exception as e:
         print(f"🚨 CSV 처리 중 오류 발생: {str(e)}")
+
 
 # 리스너 클래스 정의
 class CsvFileListener(FileSystemEventHandler):
@@ -98,6 +117,7 @@ class CsvFileListener(FileSystemEventHandler):
             print(f"📂 CSV 파일 {event.src_path} 가 수정되었습니다.")
             print("🔄 DB에 저장을 시작합니다.")
             store_csv_to_db(event.src_path)
+
 
 # CSV 감시 시작 함수
 def start_csv_listener():
@@ -118,6 +138,7 @@ def start_csv_listener():
         observer.schedule(event_handler, path=watch_folder, recursive=False)
         observer.start()
         print(f"🚀 CSV 감시 시작됨... ({CSV_FILE_PATH})")
+
 
 # CSV 감시 중지 함수
 def stop_csv_listener():
