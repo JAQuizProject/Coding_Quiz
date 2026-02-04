@@ -111,33 +111,34 @@
 
 ```
 📦 CodingQuizProject
-├── 📂 backend
-│   ├── 📂 app
-│   │   ├── 📂 core
-│   │   │   ├── config.py
-│   │   │   ├── database.py
-│   │   │   ├── security.py
-│   │   │   ├── csv_listener.py
-│   │   ├── 📂 models
-│   │   │   ├── user.py
-│   │   │   ├── quiz.py
-│   │   │   ├── score.py
-│   │   ├── 📂 routes
-│   │   │   ├── auth.py
-│   │   │   ├── quiz.py
-│   │   │   ├── ranking.py
-│   │   ├── 📂 services
-│   │   │   ├── auth_service.py
-│   │   │   ├── quiz_service.py
-│   │   │   ├── ranking_service.py
-│   │   ├── 📂 repositories
-│   │   │   ├── user_repository.py
-│   │   │   ├── quiz_repository.py
-│   │   │   ├── ranking_repository.py
-│   ├── Dockerfile
-│   ├── main.py
-│   ├── requirements.txt
-│   ├── .env
+├── 📂 app
+│   ├── 📂 core
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   ├── security.py
+│   │   ├── csv_listener.py
+│   ├── 📂 models
+│   │   ├── user.py
+│   │   ├── quiz.py
+│   │   ├── score.py
+│   ├── 📂 routes
+│   │   ├── auth.py
+│   │   ├── quiz.py
+│   │   ├── ranking.py
+│   ├── 📂 services
+│   │   ├── auth_service.py
+│   │   ├── quiz_service.py
+│   │   ├── ranking_service.py
+│   ├── 📂 repositories
+│   │   ├── user_repository.py
+│   │   ├── quiz_repository.py
+│   │   ├── ranking_repository.py
+├── csv_files
+├── Dockerfile
+├── main.py
+├── pyproject.toml
+├── poetry.lock
+├── .env
 │
 ├── 📂 frontend
 │   ├── 📂 api
@@ -166,20 +167,12 @@
 
 ### **1️⃣ 백엔드 실행**
 ```bash
-# 백엔드 폴더 이동
-cd backend
-
-# 가상환경 활성화 (Windows)
-venv\Scripts\activate
-
-# 가상환경 활성화 (Linux/Mac)
-source venv/bin/activate
-
+# 프로젝트 루트에서 실행
 # 패키지 설치
-pip install -r requirements.txt
+poetry install
 
 # 서버 실행
-uvicorn main:app --reload
+poetry run uvicorn main:app --reload
 ```
 
 ### **2️⃣ 프론트엔드 실행**

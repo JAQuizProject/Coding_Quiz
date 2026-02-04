@@ -1,0 +1,32 @@
+[project]
+name = "coding-quiz"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "JAEHO AHN",email = "ajh4234@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "sqlalchemy",
+  "pydantic",
+  "python-dotenv",
+  "watchdog",
+  "passlib[bcrypt]",
+  "pyjwt[crypto]"
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg2-binary"]
+ai = ["langchain", "openai"]
+dev = ["pytest", "ruff"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{ include = "app" }]
+
