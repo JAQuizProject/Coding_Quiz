@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
   "fastapi",
-  "uvicorn",
+  "uvicorn[standard] (>=0.40.0,<0.41.0)",
   "sqlalchemy",
   "pydantic",
   "python-dotenv",
