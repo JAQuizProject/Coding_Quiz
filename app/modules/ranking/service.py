@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from ..repositories.ranking_repository import RankingRepository
+from app.modules.ranking.repository import RankingRepository
 
 """
 RankingService

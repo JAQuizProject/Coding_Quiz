@@ -121,18 +121,21 @@
 │   │   ├── user.py
 │   │   ├── quiz.py
 │   │   ├── score.py
-│   ├── 📂 routes
-│   │   ├── auth.py
-│   │   ├── quiz.py
-│   │   ├── ranking.py
-│   ├── 📂 services
-│   │   ├── auth_service.py
-│   │   ├── quiz_service.py
-│   │   ├── ranking_service.py
-│   ├── 📂 repositories
-│   │   ├── user_repository.py
-│   │   ├── quiz_repository.py
-│   │   ├── ranking_repository.py
+│   ├── 📂 modules
+│   │   ├── 📂 auth
+│   │   │   ├── router.py
+│   │   │   ├── service.py
+│   │   │   ├── repository.py
+│   │   │   ├── schemas.py
+│   │   ├── 📂 quiz
+│   │   │   ├── router.py
+│   │   │   ├── service.py
+│   │   │   ├── repository.py
+│   │   │   ├── schemas.py
+│   │   ├── 📂 ranking
+│   │   │   ├── router.py
+│   │   │   ├── service.py
+│   │   │   ├── repository.py
 ├── csv_files
 ├── Dockerfile
 ├── main.py

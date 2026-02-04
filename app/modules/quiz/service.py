@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from ..repositories.quiz_repository import QuizRepository
+from app.modules.quiz.repository import QuizRepository
 
 """
 QuizService

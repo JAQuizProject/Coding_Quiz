@@ -88,7 +88,7 @@ class QuizRepository:
             str: 'update' 또는 'insert'를 반환하여 호출자에게 동작 종류를 알립니다.
         """
         # 지연 임포트: 모듈 로딩 시 순환 참조를 피하기 위해 내부에서 import
-        from ..models.score import Score
+        from app.models.score import Score
 
         existing = (
             self.db.query(Score)

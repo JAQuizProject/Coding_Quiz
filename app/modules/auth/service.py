@@ -1,8 +1,8 @@
 from datetime import timedelta
 from typing import Any
 
-from ..core.security import create_access_token, get_password_hash, verify_password
-from ..repositories.user_repository import UserRepository
+from app.core.security import create_access_token, get_password_hash, verify_password
+from app.modules.auth.repository import UserRepository
 
 """
 AuthService

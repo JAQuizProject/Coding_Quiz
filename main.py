@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import init_db
-from app.routes import router
+from app.modules import api_router
 from app.core import csv_listener # CSV 감시 모듈 import
 
 app = FastAPI(debug=True)
@@ -40,7 +40,7 @@ app.add_middleware(
 init_db()
 
 # 라우터 등록
-app.include_router(router)
+app.include_router(api_router)
 
 @app.get("/")
 def read_root():
@@ -59,7 +59,7 @@ def read_root():
 @app.on_event("startup")
 def on_startup():
     csv_listener.start_csv_listener()  # 서버 시작 시 감시 시작
-    for route in router.routes:
+    for route in api_router.routes:
         print(f" {route.path} -> {route.methods}")
 
 @app.on_event("shutdown")

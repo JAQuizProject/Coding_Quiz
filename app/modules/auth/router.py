@@ -2,12 +2,13 @@ import os
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..core.database import get_db
-from ..repositories.user_repository import UserRepository
-from ..services.auth_service import AuthService
+from app.core.database import get_db
+from app.core.security import decode_access_token
+from app.modules.auth.repository import UserRepository
+from app.modules.auth.schemas import UserCreate, UserLogin
+from app.modules.auth.service import AuthService
 
 router = APIRouter()
 
@@ -16,19 +17,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 # JWT 만료 시간 설정 (환경 변수에서 가져오기)
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
-
-
-# 회원가입 요청 모델
-class UserCreate(BaseModel):
-    username: str
-    email: str
-    password: str
-
-
-# 로그인 요청 모델
-class UserLogin(BaseModel):
-    email: str
-    password: str
 
 
 def _get_auth_service(db: Session = Depends(get_db)) -> AuthService:
@@ -67,9 +55,6 @@ async def login(
 
 @router.post("/verify-token")
 async def verify_token(token: str = Depends(oauth2_scheme)):
-    # 여기는 기존 로직을 그대로 유지합니다.
-    from ..core.security import decode_access_token
-
     payload = decode_access_token(token)
     if not payload or "id" not in payload or "email" not in payload:
         raise HTTPException(

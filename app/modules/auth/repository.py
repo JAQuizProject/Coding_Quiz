@@ -33,7 +33,7 @@ class UserRepository:
         Returns:
             User | None: 조회된 User 객체 또는 None
         """
-        from ..models.user import User
+        from app.models.user import User
 
         return self.db.query(User).filter(User.email == email).first()
 
@@ -46,7 +46,7 @@ class UserRepository:
         Returns:
             User | None: 조회된 User 객체 또는 None
         """
-        from ..models.user import User
+        from app.models.user import User
 
         return self.db.query(User).filter(User.username == username).first()
 
@@ -61,7 +61,7 @@ class UserRepository:
         Returns:
             User: 생성된 User 객체 (커밋 및 리프레시 이후 반환)
         """
-        from ..models.user import User
+        from app.models.user import User
 
         new_user = User(username=username, email=email, hashed_password=hashed_password)
         self.db.add(new_user)
