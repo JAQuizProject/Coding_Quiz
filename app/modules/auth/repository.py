@@ -63,7 +63,11 @@ class UserRepository:
         """
         from app.models.user import User
 
-        new_user = User(username=username, email=email, hashed_password=hashed_password)
+        new_user = User(
+            username=username,
+            email=email,
+            hashed_password=hashed_password,
+        )
         self.db.add(new_user)
         self.db.commit()
         self.db.refresh(new_user)

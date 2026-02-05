@@ -49,18 +49,26 @@ async def get_quiz_data(
     JWT 토큰을 검증한 후, 특정 카테고리의 퀴즈 목록을 가져옴.
     """
     if not user:
-        raise HTTPException(status_code=401, detail="로그인이 필요한 서비스입니다.")
+        raise HTTPException(
+            status_code=401,
+            detail="로그인이 필요한 서비스입니다.",
+        )
 
     try:
         quiz_list = await quiz_service.get_quizzes(category)
         return {"message": "퀴즈 데이터 조회 성공", "data": quiz_list}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"데이터베이스 오류: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"데이터베이스 오류: {str(e)}",
+        )
 
 
 @router.get("/categories")
-async def get_categories(quiz_service: QuizService = Depends(_get_quiz_service)):
+async def get_categories(
+    quiz_service: QuizService = Depends(_get_quiz_service),
+):
     """
     데이터베이스에서 사용 가능한 카테고리 목록을 가져옴.
     """
@@ -69,7 +77,10 @@ async def get_categories(quiz_service: QuizService = Depends(_get_quiz_service))
         return {"message": "카테고리 조회 성공", "data": category_list}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"카테고리 조회 오류: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"카테고리 조회 오류: {str(e)}",
+        )
 
 
 @router.post("/submit")
@@ -79,11 +90,18 @@ async def submit_quiz_score(
     quiz_service: QuizService = Depends(_get_quiz_service),
 ):
     """
-    사용자의 퀴즈 점수를 덮어씌우며 저장 (같은 user_id + category가 존재하면 UPDATE)
+    사용자의 퀴즈 점수를 덮어씌우며 저장 (같은 user_id + category가
+    존재하면 UPDATE)
     """
     try:
-        result = await quiz_service.submit_score(user.id, score_data.model_dump())
+        result = await quiz_service.submit_score(
+            user.id,
+            score_data.model_dump(),
+        )
         return result
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"점수 저장 오류: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"점수 저장 오류: {str(e)}",
+        )

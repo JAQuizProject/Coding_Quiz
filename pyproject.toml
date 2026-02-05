@@ -30,3 +30,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 packages = [{ include = "app" }]
 
+[tool.ruff]
+line-length = 120
+
+

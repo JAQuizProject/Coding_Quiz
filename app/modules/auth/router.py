@@ -25,10 +25,12 @@ def _get_auth_service(db: Session = Depends(get_db)) -> AuthService:
 
 
 @router.post("/signup")
-async def signup(
-    user: UserCreate, auth_service: AuthService = Depends(_get_auth_service)
-):
-    new_user, err = await auth_service.signup(user.username, user.email, user.password)
+async def signup(user: UserCreate, auth_service: AuthService = Depends(_get_auth_service)):
+    new_user, err = await auth_service.signup(
+        user.username,
+        user.email,
+        user.password,
+    )
     if err:
         raise HTTPException(status_code=400, detail=err)
 
@@ -43,9 +45,7 @@ async def signup(
 
 
 @router.post("/login")
-async def login(
-    user: UserLogin, auth_service: AuthService = Depends(_get_auth_service)
-):
+async def login(user: UserLogin, auth_service: AuthService = Depends(_get_auth_service)):
     result, err = await auth_service.login(user.email, user.password)
     if err:
         raise HTTPException(status_code=401, detail=err)
@@ -57,9 +57,7 @@ async def login(
 async def verify_token(token: str = Depends(oauth2_scheme)):
     payload = decode_access_token(token)
     if not payload or "id" not in payload or "email" not in payload:
-        raise HTTPException(
-            status_code=401, detail="유효하지 않거나 만료된 토큰입니다."
-        )
+        raise HTTPException(status_code=401, detail="유효하지 않거나 만료된 토큰입니다.")
 
     return {"message": "토큰이 유효합니다.", "user": payload["email"]}
 

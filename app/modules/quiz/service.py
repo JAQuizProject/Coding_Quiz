@@ -8,8 +8,11 @@ QuizService
 퀴즈 관련 비즈니스 로직을 담당하는 서비스 계층입니다.
 
 설계 주의사항:
-- 서비스는 레포지토리를 호출하여 원시 데이터를 얻고, 도메인 로직(점수 계산, 메시지 생성 등)을 수행합니다.
-- 현재 레포지토리에서 커밋을 수행하므로, 서비스는 단일 호출 단위로 동작합니다. 필요시 트랜잭션 경계를 서비스로 이동하세요.
+- 서비스는 레포지토리를 호출하여 원시 데이터를 얻고,
+  도메인 로직(점수 계산, 메시지 생성 등)을 수행합니다.
+- 현재 레포지토리에서 커밋을 수행하므로, 서비스는 단일 호출
+  단위로 동작합니다. 필요시 트랜잭션 경계를 서비스로
+  이동하세요.
 """
 
 
@@ -38,7 +41,11 @@ class QuizService:
         """사용 가능한 카테고리 리스트 반환"""
         return self.repo.fetch_categories()
 
-    async def submit_score(self, user_id: int, score_data: dict) -> Dict[str, Any]:
+    async def submit_score(
+        self,
+        user_id: int,
+        score_data: dict,
+    ) -> Dict[str, Any]:
         """사용자 점수를 계산하여 저장하고 결과 메시지를 반환합니다.
 
         Args:
@@ -51,12 +58,8 @@ class QuizService:
         category = score_data.get("category", "전체")
         correct_count = score_data.get("correct", 0)
         total_questions = score_data.get("total", 10)
-        score_percentage = (
-            (correct_count / total_questions) * 100 if total_questions else 0
-        )
+        score_percentage = (correct_count / total_questions) * 100 if total_questions else 0
 
         result = self.repo.upsert_score(user_id, category, score_percentage)
-        message = (
-            "기존 점수 업데이트 성공" if result == "update" else "새 점수 저장 성공"
-        )
+        message = "기존 점수 업데이트 성공" if result == "update" else "새 점수 저장 성공"
         return {"message": message, "score": score_percentage}

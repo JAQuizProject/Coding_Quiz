@@ -1,5 +1,5 @@
 from .quiz import Quiz
-from .user import User
 from .score import Score
+from .user import User
 
 __all__ = ["Quiz", "User", "Score"]

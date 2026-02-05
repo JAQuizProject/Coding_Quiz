@@ -19,7 +19,8 @@ def is_db_empty():
     """데이터베이스에 데이터가 있는지 확인"""
     with SessionLocal() as session:
         try:
-            result = session.execute(text("SELECT COUNT(*) FROM quizzes")).fetchone()
+            query = text("SELECT COUNT(*) FROM quizzes")
+            result = session.execute(query).fetchone()
             return result[0] == 0 if result else True
         except Exception as e:
             print(f"🚨 DB 확인 중 오류 발생: {str(e)}")
@@ -61,10 +62,24 @@ def store_csv_to_db(CSV_FILE_PATH):
                         # SQLite와 PostgreSQL에서 각각 다르게 처리
                         if "sqlite" in config.DATABASE_URL:
                             session.execute(
-                                text("""
-                                INSERT OR REPLACE INTO quizzes (id, question, explanation, answer, category)
-                                VALUES (:id, :question, :explanation, :answer, :category)
-                            """),
+                                text(
+                                    """
+                                    INSERT OR REPLACE INTO quizzes (
+                                        id,
+                                        question,
+                                        explanation,
+                                        answer,
+                                        category
+                                    )
+                                    VALUES (
+                                        :id,
+                                        :question,
+                                        :explanation,
+                                        :answer,
+                                        :category
+                                    )
+                                    """
+                                ),
                                 {
                                     "id": quiz_id,
                                     "question": question,
@@ -75,15 +90,29 @@ def store_csv_to_db(CSV_FILE_PATH):
                             )
                         else:  # PostgreSQL
                             session.execute(
-                                text("""
-                                INSERT INTO quizzes (id, question, explanation, answer, category)
-                                VALUES (:id, :question, :explanation, :answer, :category)
-                                ON CONFLICT (id) DO UPDATE
-                                SET question=EXCLUDED.question,
-                                    explanation=EXCLUDED.explanation,
-                                    answer=EXCLUDED.answer,
-                                    category=EXCLUDED.category;
-                            """),
+                                text(
+                                    """
+                                    INSERT INTO quizzes (
+                                        id,
+                                        question,
+                                        explanation,
+                                        answer,
+                                        category
+                                    )
+                                    VALUES (
+                                        :id,
+                                        :question,
+                                        :explanation,
+                                        :answer,
+                                        :category
+                                    )
+                                    ON CONFLICT (id) DO UPDATE
+                                    SET question = EXCLUDED.question,
+                                        explanation = EXCLUDED.explanation,
+                                        answer = EXCLUDED.answer,
+                                        category = EXCLUDED.category;
+                                    """
+                                ),
                                 {
                                     "id": quiz_id,
                                     "question": question,
@@ -94,9 +123,7 @@ def store_csv_to_db(CSV_FILE_PATH):
                             )
 
                     except Exception as e:
-                        print(
-                            f"❌ [행 {row_number}] 데이터 변환 오류: {row}, 오류: {str(e)}"
-                        )
+                        print(f"❌ [행 {row_number}] 데이터 변환 오류: {row}, 오류: {str(e)}")
                         continue
 
             session.commit()
