@@ -16,7 +16,7 @@
 ## 기술 스택
 
 ### 백엔드 (FastAPI)
-- **언어:** Python 3.10+
+- **언어:** Python 3.13+
 - **웹 프레임워크:** FastAPI
 - **서버:** Uvicorn
 - **DB:** PostgreSQL (RDS 사용) + SQLAlchemy
@@ -36,8 +36,7 @@
 
 ### 개발 환경
 - **운영 체제:** Ubuntu (EC2), Windows (로컬 개발)
-- **패키지 매니저:** npm / yarn / pip
-- **가상 환경:** venv
+- **패키지 매니저:** Poetry
 - **버전 관리:** Git & GitHub
 - **컨테이너 관리:** Docker + PM2
 
@@ -173,10 +172,15 @@ CodingQuizProject
 ```bash
 # 프로젝트 루트에서 실행
 # 패키지 설치
-poetry install
+poetry install --with dev
 
 # 서버 실행
 poetry run uvicorn main:app --reload
+```
+
+선택 의존성 설치가 필요할 경우:
+```bash
+poetry install --extras "postgres ai"
 ```
 
 ### 프론트엔드 실행
