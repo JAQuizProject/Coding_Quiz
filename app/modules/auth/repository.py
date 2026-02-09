@@ -1,5 +1,7 @@
-# ...existing code...
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from app.models import User
 
 """
 UserRepository
@@ -33,9 +35,8 @@ class UserRepository:
         Returns:
             User | None: 조회된 User 객체 또는 None
         """
-        from app.models.user import User
-
-        return self.db.query(User).filter(User.email == email).first()
+        stmt = select(User).where(User.email == email)
+        return self.db.scalars(stmt).first()
 
     def get_by_username(self, username: str):
         """사용자명으로 사용자 조회
@@ -46,9 +47,8 @@ class UserRepository:
         Returns:
             User | None: 조회된 User 객체 또는 None
         """
-        from app.models.user import User
-
-        return self.db.query(User).filter(User.username == username).first()
+        stmt = select(User).where(User.username == username)
+        return self.db.scalars(stmt).first()
 
     def create_user(self, username: str, email: str, hashed_password: str):
         """새로운 사용자 생성 및 DB 저장
@@ -61,8 +61,6 @@ class UserRepository:
         Returns:
             User: 생성된 User 객체 (커밋 및 리프레시 이후 반환)
         """
-        from app.models.user import User
-
         new_user = User(
             username=username,
             email=email,

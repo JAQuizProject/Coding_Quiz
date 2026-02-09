@@ -1,12 +1,12 @@
 import csv
 import os
 
-from sqlalchemy import text
+from sqlalchemy import func, select
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-from ..core.config import config
 from ..core.database import SessionLocal
+from ..models.quiz import Quiz
 
 # 감시할 CSV 파일 경로
 CSV_FILE_PATH = "csv_files/quiz_data.csv"
@@ -19,9 +19,8 @@ def is_db_empty():
     """데이터베이스에 데이터가 있는지 확인"""
     with SessionLocal() as session:
         try:
-            query = text("SELECT COUNT(*) FROM quizzes")
-            result = session.execute(query).fetchone()
-            return result[0] == 0 if result else True
+            count = session.scalar(select(func.count()).select_from(Quiz))
+            return (count or 0) == 0
         except Exception as e:
             print(f"🚨 DB 확인 중 오류 발생: {str(e)}")
             return True  # 오류 발생 시 데이터를 저장하도록 처리
@@ -59,68 +58,16 @@ def store_csv_to_db(CSV_FILE_PATH):
                         answer = str(row[3])
                         category = row[4]  # 카테고리 추가
 
-                        # SQLite와 PostgreSQL에서 각각 다르게 처리
-                        if "sqlite" in config.DATABASE_URL:
-                            session.execute(
-                                text(
-                                    """
-                                    INSERT OR REPLACE INTO quizzes (
-                                        id,
-                                        question,
-                                        explanation,
-                                        answer,
-                                        category
-                                    )
-                                    VALUES (
-                                        :id,
-                                        :question,
-                                        :explanation,
-                                        :answer,
-                                        :category
-                                    )
-                                    """
-                                ),
-                                {
-                                    "id": quiz_id,
-                                    "question": question,
-                                    "explanation": explanation,
-                                    "answer": answer,
-                                    "category": category,
-                                },
+                        # PK(id) 기준으로 insert/update를 처리 (DB 종류 무관)
+                        session.merge(
+                            Quiz(
+                                id=quiz_id,
+                                question=question,
+                                explanation=explanation,
+                                answer=answer,
+                                category=category,
                             )
-                        else:  # PostgreSQL
-                            session.execute(
-                                text(
-                                    """
-                                    INSERT INTO quizzes (
-                                        id,
-                                        question,
-                                        explanation,
-                                        answer,
-                                        category
-                                    )
-                                    VALUES (
-                                        :id,
-                                        :question,
-                                        :explanation,
-                                        :answer,
-                                        :category
-                                    )
-                                    ON CONFLICT (id) DO UPDATE
-                                    SET question = EXCLUDED.question,
-                                        explanation = EXCLUDED.explanation,
-                                        answer = EXCLUDED.answer,
-                                        category = EXCLUDED.category;
-                                    """
-                                ),
-                                {
-                                    "id": quiz_id,
-                                    "question": question,
-                                    "explanation": explanation,
-                                    "answer": answer,
-                                    "category": category,
-                                },
-                            )
+                        )
 
                     except Exception as e:
                         print(f"❌ [행 {row_number}] 데이터 변환 오류: {row}, 오류: {str(e)}")

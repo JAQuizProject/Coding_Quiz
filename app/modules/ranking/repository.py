@@ -1,7 +1,9 @@
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import text
+
+from app.models import Score, User
 
 """
 RankingRepository
@@ -12,7 +14,7 @@ RankingRepository
 - 특정 카테고리(또는 전체)의 상위 점수 데이터를 조회
 
 설계 주의사항:
-- SQL을 직접 사용하여 필요한 컬럼만 조회합니다.
+- SQLAlchemy ORM 모델 기반으로 필요한 컬럼만 선택하여 조회합니다.
 - 반환값은 서비스 계층에서 포맷팅(랭킹 번호, 날짜 포맷 등)을
   수행하도록 원시 데이터를 제공합니다.
 """
@@ -39,21 +41,23 @@ class RankingRepository:
             List[Dict[str, Any]]: 각 행은 dict(username, score, category,
                 created_at) 형태로 반환됩니다.
         """
-        query = """
-            SELECT u.username, s.score, s.category, s.created_at
-            FROM scores s
-            JOIN users u ON s.user_id = u.id
-        """
+        stmt = (
+            select(
+                User.username.label("username"),
+                Score.score.label("score"),
+                Score.category.label("category"),
+                Score.created_at.label("created_at"),
+            )
+            .select_from(Score)
+            .join(User, Score.user_id == User.id)
+        )
 
-        params = {}
         if category and category != "전체":
-            query += " WHERE s.category = :category"
-            params["category"] = category
+            stmt = stmt.where(Score.category == category)
         elif category == "전체":
-            query += " WHERE s.category = '전체'"
+            stmt = stmt.where(Score.category == "전체")
 
-        query += " ORDER BY s.score DESC, s.created_at ASC LIMIT :limit"
-        params["limit"] = limit
+        stmt = stmt.order_by(Score.score.desc(), Score.created_at.asc()).limit(limit)
 
-        rows = self.db.execute(text(query), params).fetchall()
-        return [dict(username=r[0], score=r[1], category=r[2], created_at=r[3]) for r in rows]
+        rows = self.db.execute(stmt).mappings().all()
+        return [dict(r) for r in rows]

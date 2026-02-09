@@ -1,7 +1,9 @@
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import text
+
+from app.models import Quiz, Score
 
 """
 QuizRepository
@@ -48,18 +50,18 @@ class QuizRepository:
             List[Dict[str, Any]]: 각 퀴즈를 딕셔너리 형태로 담은 리스트.
                 키: id, question, explanation, answer
         """
-        if category:
-            # 카테고리가 지정된 경우 해당 카테고리의 퀴즈만 조회
-            query = text("SELECT id, question, explanation, answer FROM quizzes WHERE category = :category")
-            params = {"category": category}
-        else:
-            # 전체 퀴즈 조회
-            query = text("SELECT id, question, explanation, answer FROM quizzes")
-            params = {}
+        stmt = select(
+            Quiz.id.label("id"),
+            Quiz.question.label("question"),
+            Quiz.explanation.label("explanation"),
+            Quiz.answer.label("answer"),
+        )
 
-        # 로우를 가져와서 간단한 dict 리스트로 변환
-        rows = self.db.execute(query, params).fetchall()
-        return [{"id": r[0], "question": r[1], "explanation": r[2], "answer": r[3]} for r in rows]
+        if category:
+            stmt = stmt.where(Quiz.category == category)
+
+        rows = self.db.execute(stmt).mappings().all()
+        return [dict(r) for r in rows]
 
     def fetch_categories(self) -> List[str]:
         """퀴즈 테이블에서 사용 가능한 카테고리 목록을 조회합니다.
@@ -68,8 +70,9 @@ class QuizRepository:
             List[str]: 중복 제거된 카테고리 문자열 목록. NULL/빈 값은
                 제외됩니다.
         """
-        rows = self.db.execute(text("SELECT DISTINCT category FROM quizzes")).fetchall()
-        return [r[0] for r in rows if r[0]]
+        stmt = select(Quiz.category).distinct().where(Quiz.category.isnot(None), Quiz.category != "")
+        categories = self.db.execute(stmt).scalars().all()
+        return list(categories)
 
     def upsert_score(
         self,
@@ -98,9 +101,6 @@ class QuizRepository:
         Returns:
             str: 'update' 또는 'insert'를 반환하여 호출자에게 동작 종류를 알립니다.
         """
-        # 지연 임포트: 모듈 로딩 시 순환 참조를 피하기 위해 내부에서 import
-        from app.models.score import Score
-
         existing = self.db.query(Score).filter(Score.user_id == user_id, Score.category == category).first()
 
         if existing:
