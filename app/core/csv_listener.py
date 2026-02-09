@@ -22,7 +22,7 @@ def is_db_empty():
             count = session.scalar(select(func.count()).select_from(Quiz))
             return (count or 0) == 0
         except Exception as e:
-            print(f"🚨 DB 확인 중 오류 발생: {str(e)}")
+            print(f"DB 확인 중 오류 발생: {str(e)}")
             return True  # 오류 발생 시 데이터를 저장하도록 처리
 
 
@@ -44,11 +44,11 @@ def store_csv_to_db(CSV_FILE_PATH):
 
                 for row_number, row in enumerate(csv_reader, start=2):
                     if not any(row):
-                        print(f"⚠ [행 {row_number}] 빈 행 건너뜀")
+                        print(f"[행 {row_number}] 빈 행 건너뜀")
                         continue
 
                     if len(row) < 5:
-                        print(f"⚠ [행 {row_number}] 잘못된 데이터 행 건너뜀: {row}")
+                        print(f"[행 {row_number}] 잘못된 데이터 행 건너뜀: {row}")
                         continue
 
                     try:
@@ -70,13 +70,13 @@ def store_csv_to_db(CSV_FILE_PATH):
                         )
 
                     except Exception as e:
-                        print(f"❌ [행 {row_number}] 데이터 변환 오류: {row}, 오류: {str(e)}")
+                        print(f"[행 {row_number}] 데이터 변환 오류: {row}, 오류: {str(e)}")
                         continue
 
             session.commit()
-        print("✅ CSV 데이터 저장 완료!")
+        print("CSV 데이터 저장 완료!")
     except Exception as e:
-        print(f"🚨 CSV 처리 중 오류 발생: {str(e)}")
+        print(f"CSV 처리 중 오류 발생: {str(e)}")
 
 
 # 리스너 클래스 정의
@@ -88,8 +88,8 @@ class CsvFileListener(FileSystemEventHandler):
         if event.is_directory:
             return
         if event.src_path == self.CSV_FILE_PATH:
-            print(f"📂 CSV 파일 {event.src_path} 가 수정되었습니다.")
-            print("🔄 DB에 저장을 시작합니다.")
+            print(f"CSV 파일 {event.src_path} 가 수정되었습니다.")
+            print("DB에 저장을 시작합니다.")
             store_csv_to_db(event.src_path)
 
 
@@ -102,16 +102,16 @@ def start_csv_listener():
 
         # 데이터베이스 확인 후 CSV 데이터 삽입 여부 결정
         if is_db_empty():
-            print("🛑 데이터베이스가 비어 있습니다. CSV 데이터를 불러옵니다...")
+            print("데이터베이스가 비어 있습니다. CSV 데이터를 불러옵니다...")
             store_csv_to_db(CSV_FILE_PATH)
         else:
-            print("✅ 데이터베이스에 기존 데이터가 존재합니다.")
+            print("데이터베이스에 기존 데이터가 존재합니다.")
 
         observer = Observer()
         event_handler = CsvFileListener(CSV_FILE_PATH)
         observer.schedule(event_handler, path=watch_folder, recursive=False)
         observer.start()
-        print(f"🚀 CSV 감시 시작됨... ({CSV_FILE_PATH})")
+        print(f"CSV 감시 시작됨... ({CSV_FILE_PATH})")
 
 
 # CSV 감시 중지 함수
@@ -120,4 +120,4 @@ def stop_csv_listener():
     if observer:
         observer.stop()
         observer.join()
-        print("🛑 CSV 감시가 중지되었습니다.")
+        print("CSV 감시가 중지되었습니다.")

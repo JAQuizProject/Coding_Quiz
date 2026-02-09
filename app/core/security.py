@@ -49,18 +49,18 @@ def decode_access_token(token: str) -> Optional[dict]:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
         if not isinstance(payload, dict):
-            print("❌ JWT Payload가 딕셔너리 타입이 아님")
+            print("JWT Payload가 딕셔너리 타입이 아님")
             return None
 
         if "sub" not in payload or "id" not in payload:
-            print(f"❌ JWT에 'sub' 또는 'id' 키 없음, Payload: {payload}")
+            print(f"JWT에 'sub' 또는 'id' 키 없음, Payload: {payload}")
             return None
 
         return {"id": payload["id"], "email": payload["sub"]}
 
     except jwt.ExpiredSignatureError:
-        print("❌ 토큰이 만료되었습니다.")
+        print("토큰이 만료되었습니다.")
         return None
     except jwt.InvalidTokenError:
-        print("❌ 유효하지 않은 토큰입니다.")
+        print("유효하지 않은 토큰입니다.")
         return None
