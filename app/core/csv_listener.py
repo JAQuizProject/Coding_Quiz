@@ -1,5 +1,6 @@
 import csv
 import os
+import re
 
 from sqlalchemy import func, select
 from watchdog.events import FileSystemEventHandler
@@ -12,6 +13,7 @@ from ..models.quiz import Quiz
 CSV_FILE_PATH = "csv_files/quiz_data.csv"
 
 observer = None  # 감시 객체 전역 변수
+_ULID_RE = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
 
 
 # 데이터베이스가 비어 있는지 확인하는 함수
@@ -27,19 +29,20 @@ def is_db_empty():
 
 
 # CSV 파일을 읽어 데이터베이스에 저장하는 함수
-def store_csv_to_db(CSV_FILE_PATH):
-    if not os.path.exists(CSV_FILE_PATH):
-        print(f"CSV 파일을 찾을 수 없음: {CSV_FILE_PATH}")
+def store_csv_to_db(csv_file_path: str):
+    if not os.path.exists(csv_file_path):
+        print(f"CSV 파일을 찾을 수 없음: {csv_file_path}")
         return
 
     try:
         with SessionLocal() as session:
-            with open(CSV_FILE_PATH, "r", encoding="utf-8") as file:
+            # Accept UTF-8 with/without BOM to avoid breaking on Windows-saved CSVs.
+            with open(csv_file_path, "r", encoding="utf-8-sig", newline="") as file:
                 csv_reader = csv.reader(file)
                 headers = next(csv_reader, None)
 
                 if not headers or len(headers) < 5:
-                    print(f"CSV 형식이 잘못됨: {CSV_FILE_PATH}")
+                    print(f"CSV 형식이 잘못됨: {csv_file_path}")
                     return
 
                 for row_number, row in enumerate(csv_reader, start=2):
@@ -52,7 +55,10 @@ def store_csv_to_db(CSV_FILE_PATH):
                         continue
 
                     try:
-                        quiz_id = int(row[0])
+                        quiz_id = (row[0] or "").strip()
+                        if not _ULID_RE.match(quiz_id):
+                            print(f"[행 {row_number}] 잘못된 ULID 건너뜀: {quiz_id!r}")
+                            continue
                         question = row[1]
                         explanation = row[2]
                         answer = str(row[3])
@@ -81,8 +87,8 @@ def store_csv_to_db(CSV_FILE_PATH):
 
 # 리스너 클래스 정의
 class CsvFileListener(FileSystemEventHandler):
-    def __init__(self, CSV_FILE_PATH):
-        self.CSV_FILE_PATH = os.path.abspath(CSV_FILE_PATH)
+    def __init__(self, csv_file_path: str):
+        self.CSV_FILE_PATH = os.path.abspath(csv_file_path)
 
     def on_modified(self, event):
         if event.is_directory:
@@ -100,12 +106,14 @@ def start_csv_listener():
         watch_folder = os.path.dirname(CSV_FILE_PATH)
         os.makedirs(watch_folder, exist_ok=True)
 
-        # 데이터베이스 확인 후 CSV 데이터 삽입 여부 결정
+        # 데이터베이스 상태와 무관하게 CSV를 동기화(merge)합니다.
+        # - DB가 비어있으면: 초기 로드
+        # - DB가 이미 있으면: 기존 PK는 업데이트, 신규 PK는 삽입
         if is_db_empty():
             print("데이터베이스가 비어 있습니다. CSV 데이터를 불러옵니다...")
-            store_csv_to_db(CSV_FILE_PATH)
         else:
-            print("데이터베이스에 기존 데이터가 존재합니다.")
+            print("데이터베이스에 기존 데이터가 존재합니다. CSV와 동기화합니다...")
+        store_csv_to_db(CSV_FILE_PATH)
 
         observer = Observer()
         event_handler = CsvFileListener(CSV_FILE_PATH)

@@ -4,13 +4,10 @@ from typing import Optional
 
 import jwt
 from dotenv import load_dotenv
-from passlib.context import CryptContext
+import bcrypt
 
 # 환경 변수 로드
 load_dotenv()
-
-# 비밀번호 해싱을 위한 설정
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT 설정
 # 기본값 설정
@@ -22,18 +19,32 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 def get_password_hash(password: str) -> str:
     """비밀번호를 해싱하여 반환"""
-    return pwd_context.hash(password)
+    password_bytes = password.encode("utf-8")
+
+    # bcrypt backend enforces a 72-byte limit (bytes, not characters).
+    if len(password_bytes) > 72:
+        raise ValueError("bcrypt passwords are limited to 72 bytes")
+
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password_bytes, salt).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """입력한 비밀번호가 해시된 비밀번호와 일치하는지 확인"""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8"),
+        )
+    except ValueError:
+        # Invalid hash format, etc.
+        return False
 
 
 def create_access_token(
-    user_id: int,
+    user_id: str,
     email: str,
-    expires_delta: timedelta = None,
+    expires_delta: timedelta | None = None,
 ):
     to_encode = {"sub": email, "id": user_id}
     expire = datetime.utcnow() + (expires_delta if expires_delta else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
@@ -56,7 +67,13 @@ def decode_access_token(token: str) -> Optional[dict]:
             print(f"JWT에 'sub' 또는 'id' 키 없음, Payload: {payload}")
             return None
 
-        return {"id": payload["id"], "email": payload["sub"]}
+        user_id = payload.get("id")
+        email = payload.get("sub")
+        if not isinstance(user_id, str) or not isinstance(email, str):
+            print(f"JWT 타입이 올바르지 않음, Payload: {payload}")
+            return None
+
+        return {"id": user_id, "email": email}
 
     except jwt.ExpiredSignatureError:
         print("토큰이 만료되었습니다.")

@@ -43,7 +43,7 @@ class QuizService:
 
     async def submit_score(
         self,
-        user_id: int,
+        user_id: str,
         score_data: dict,
     ) -> Dict[str, Any]:
         """사용자 점수를 계산하여 저장하고 결과 메시지를 반환합니다.

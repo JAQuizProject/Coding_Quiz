@@ -49,7 +49,10 @@ class AuthService:
         if self.user_repo.get_by_username(username):
             return None, "이미 존재하는 사용자 이름입니다."
 
-        hashed_password = get_password_hash(password)
+        try:
+            hashed_password = get_password_hash(password)
+        except ValueError:
+            return None, "비밀번호는 72바이트 이하여야 합니다."
         user = self.user_repo.create_user(
             username,
             email_lower,

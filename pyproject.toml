@@ -6,7 +6,7 @@ build-backend = "poetry.core.masonry.api"
 name = "coding-quiz"
 version = "0.1.0"
 description = ""
-authors = [{ name = "JAEHO AHN", email = "ajh4234@gmail.com" }]
+authors = ["JAEHO AHN <ajh4234@gmail.com>"]
 readme = "README.md"
 packages = [{ include = "app" }]
 

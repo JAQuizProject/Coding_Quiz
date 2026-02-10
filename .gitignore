@@ -15,6 +15,7 @@ frontend/.env
 
 # SQLite 데이터베이스 파일
 quiz_app.db
+quiz_app.db.bak-*
 
 # FastAPI & Uvicorn 관련
 instance/

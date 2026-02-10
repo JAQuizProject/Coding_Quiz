@@ -76,7 +76,7 @@ class QuizRepository:
 
     def upsert_score(
         self,
-        user_id: int,
+        user_id: str,
         category: str,
         score_percentage: float,
     ):

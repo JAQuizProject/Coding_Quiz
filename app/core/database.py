@@ -20,7 +20,8 @@ Base = declarative_base()
 # DB 초기화 함수
 def init_db():
     """데이터베이스 테이블 생성"""
-    from ..models import quiz, user  # noqa: F401
+    # Ensure all models are imported so Base.metadata is fully populated.
+    from ..models import quiz, score, user  # noqa: F401
 
     # 테이블 중복 생성 방지
     Base.metadata.create_all(bind=engine)
