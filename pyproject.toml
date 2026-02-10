@@ -22,6 +22,7 @@ passlib = { version = "*", extras = ["bcrypt"] }
 pyjwt = { version = "*", extras = ["crypto"] }
 alembic = ">=1.18.3,<2.0.0"
 psycopg2-binary = { version = ">=2.9.11,<3.0.0", optional = true }
+py-ulid = "^1.0.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
