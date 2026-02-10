@@ -1,33 +1,13 @@
 from __future__ import annotations
 
 import csv
-import re
-import secrets
-import time
 from pathlib import Path
+
+from app.core.ulid import generate_ulid, is_valid_ulid
 
 
 CSV_PATH = Path("csv_files/quiz_data.csv")
-ULID_RE = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
 BROKEN_MARKER = "??"
-
-_CROCKFORD_BASE32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-
-
-def _generate_ulid(timestamp_ms: int | None = None) -> str:
-    """Generate a ULID string (26 chars)."""
-    ts_ms = int(time.time() * 1000) if timestamp_ms is None else int(timestamp_ms)
-    if ts_ms < 0 or ts_ms >= 2**48:
-        raise ValueError("timestamp_ms out of range for ULID (must fit in 48 bits)")
-
-    rand = secrets.token_bytes(10)  # 80 bits
-    value = (ts_ms << 80) | int.from_bytes(rand, "big")
-
-    chars: list[str] = []
-    for _ in range(26):
-        chars.append(_CROCKFORD_BASE32[value & 0x1F])
-        value >>= 5
-    return "".join(reversed(chars))
 
 
 def _row_is_broken(row: list[str]) -> bool:
@@ -642,7 +622,7 @@ def main() -> None:
 
     for row in rows:
         quiz_id = row[0].strip()
-        if not ULID_RE.match(quiz_id):
+        if not is_valid_ulid(quiz_id):
             raise SystemExit(f"Invalid ULID id: {quiz_id!r}")
         if quiz_id in existing_ids:
             raise SystemExit(f"Duplicate id detected: {quiz_id}")
@@ -671,9 +651,9 @@ def main() -> None:
         key = (item["question"], item["answer"], item["category"])
         if key in existing_qas:
             continue
-        new_id = _generate_ulid()
+        new_id = generate_ulid()
         while new_id in existing_ids:
-            new_id = _generate_ulid()
+            new_id = generate_ulid()
         existing_ids.add(new_id)
         new_rows.append([new_id, item["question"], item["explanation"], item["answer"], item["category"]])
         existing_qas.add(key)

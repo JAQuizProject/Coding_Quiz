@@ -1,19 +1,18 @@
 import csv
 import os
-import re
 
 from sqlalchemy import func, select
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from ..core.database import SessionLocal
+from ..core.ulid import is_valid_ulid
 from ..models.quiz import Quiz
 
 # 감시할 CSV 파일 경로
 CSV_FILE_PATH = "csv_files/quiz_data.csv"
 
 observer = None  # 감시 객체 전역 변수
-_ULID_RE = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
 
 
 # 데이터베이스가 비어 있는지 확인하는 함수
@@ -56,7 +55,7 @@ def store_csv_to_db(csv_file_path: str):
 
                     try:
                         quiz_id = (row[0] or "").strip()
-                        if not _ULID_RE.match(quiz_id):
+                        if not is_valid_ulid(quiz_id):
                             print(f"[행 {row_number}] 잘못된 ULID 건너뜀: {quiz_id!r}")
                             continue
                         question = row[1]
