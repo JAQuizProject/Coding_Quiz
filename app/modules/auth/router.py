@@ -7,7 +7,16 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.modules.auth.repository import UserRepository
-from app.modules.auth.schemas import UserCreate, UserLogin
+from app.modules.auth.schemas import (
+    LoginRequest,
+    LoginResponse,
+    LoginUser,
+    LogoutResponse,
+    SignupRequest,
+    SignupResponse,
+    SignupUser,
+    VerifyTokenResponse,
+)
 from app.modules.auth.service import AuthService
 
 router = APIRouter()
@@ -24,8 +33,11 @@ def _get_auth_service(db: Session = Depends(get_db)) -> AuthService:
     return AuthService(repo, token_expire_minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
 
-@router.post("/signup")
-async def signup(user: UserCreate, auth_service: AuthService = Depends(_get_auth_service)):
+@router.post("/signup", response_model=SignupResponse)
+async def signup(
+    user: SignupRequest,
+    auth_service: AuthService = Depends(_get_auth_service),
+) -> SignupResponse:
     new_user, err = await auth_service.signup(
         user.username,
         user.email,
@@ -34,34 +46,44 @@ async def signup(user: UserCreate, auth_service: AuthService = Depends(_get_auth
     if err:
         raise HTTPException(status_code=400, detail=err)
 
-    return {
-        "message": "회원가입 성공!",
-        "user": {
-            "id": new_user.id,
-            "username": new_user.username,
-            "email": new_user.email,
-        },
-    }
+    return SignupResponse(
+        message="회원가입 성공!",
+        user=SignupUser(
+            id=new_user.id,
+            username=new_user.username,
+            email=new_user.email,
+        ),
+    )
 
 
-@router.post("/login")
-async def login(user: UserLogin, auth_service: AuthService = Depends(_get_auth_service)):
+@router.post("/login", response_model=LoginResponse)
+async def login(
+    user: LoginRequest,
+    auth_service: AuthService = Depends(_get_auth_service),
+) -> LoginResponse:
     result, err = await auth_service.login(user.email, user.password)
     if err:
         raise HTTPException(status_code=401, detail=err)
 
-    return {"message": "로그인 성공!", **result}
+    return LoginResponse(
+        message="로그인 성공!",
+        access_token=result["access_token"],
+        user=LoginUser.model_validate(result["user"]),
+    )
 
 
-@router.post("/verify-token")
-async def verify_token(token: str = Depends(oauth2_scheme)):
+@router.post("/verify-token", response_model=VerifyTokenResponse)
+async def verify_token(token: str = Depends(oauth2_scheme)) -> VerifyTokenResponse:
     payload = decode_access_token(token)
-    if not payload or "id" not in payload or "email" not in payload:
+    if not payload:
         raise HTTPException(status_code=401, detail="유효하지 않거나 만료된 토큰입니다.")
 
-    return {"message": "토큰이 유효합니다.", "user": payload["email"]}
+    return VerifyTokenResponse(
+        message="토큰이 유효합니다.",
+        user=payload.email,
+    )
 
 
-@router.post("/logout")
-async def logout():
-    return {"message": "로그아웃 성공! 클라이언트에서 토큰을 삭제하세요."}
+@router.post("/logout", response_model=LogoutResponse)
+async def logout() -> LogoutResponse:
+    return LogoutResponse(message="로그아웃 성공! 클라이언트에서 토큰을 삭제하세요.")

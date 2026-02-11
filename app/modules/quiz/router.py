@@ -6,7 +6,13 @@ from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.models.user import User
 from app.modules.quiz.repository import QuizRepository
-from app.modules.quiz.schemas import ScoreSubmit
+from app.modules.quiz.schemas import (
+    CategoryListResponse,
+    QuizListQuery,
+    QuizListResponse,
+    ScoreSubmitRequest,
+    ScoreSubmitResponse,
+)
 from app.modules.quiz.service import QuizService
 
 router = APIRouter()
@@ -23,11 +29,11 @@ def get_current_user(
     token = credentials.credentials  # Bearer 토큰 추출
     user_data = decode_access_token(token)  # JWT 해독
 
-    if not user_data or "id" not in user_data:
+    if not user_data:
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")
 
     # User 객체 조회
-    user = db.query(User).filter(User.id == user_data["id"]).first()
+    user = db.query(User).filter(User.id == user_data.id).first()
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
 
@@ -39,12 +45,12 @@ def _get_quiz_service(db: Session = Depends(get_db)) -> QuizService:
     return QuizService(repo)
 
 
-@router.get("/get")
+@router.get("/get", response_model=QuizListResponse)
 async def get_quiz_data(
-    category: str = None,
+    query: QuizListQuery = Depends(),
     user: User = Depends(get_current_user),
     quiz_service: QuizService = Depends(_get_quiz_service),
-):
+) -> QuizListResponse:
     """
     JWT 토큰을 검증한 후, 특정 카테고리의 퀴즈 목록을 가져옴.
     """
@@ -55,8 +61,8 @@ async def get_quiz_data(
         )
 
     try:
-        quiz_list = await quiz_service.get_quizzes(category)
-        return {"message": "퀴즈 데이터 조회 성공", "data": quiz_list}
+        quiz_list = await quiz_service.get_quizzes(query.category)
+        return QuizListResponse(message="퀴즈 데이터 조회 성공", data=quiz_list)
 
     except Exception as e:
         raise HTTPException(
@@ -65,16 +71,16 @@ async def get_quiz_data(
         )
 
 
-@router.get("/categories")
+@router.get("/categories", response_model=CategoryListResponse)
 async def get_categories(
     quiz_service: QuizService = Depends(_get_quiz_service),
-):
+) -> CategoryListResponse:
     """
     데이터베이스에서 사용 가능한 카테고리 목록을 가져옴.
     """
     try:
         category_list = await quiz_service.get_categories()
-        return {"message": "카테고리 조회 성공", "data": category_list}
+        return CategoryListResponse(message="카테고리 조회 성공", data=category_list)
 
     except Exception as e:
         raise HTTPException(
@@ -83,21 +89,18 @@ async def get_categories(
         )
 
 
-@router.post("/submit")
+@router.post("/submit", response_model=ScoreSubmitResponse)
 async def submit_quiz_score(
-    score_data: ScoreSubmit,
+    score_data: ScoreSubmitRequest,
     user: User = Depends(get_current_user),
     quiz_service: QuizService = Depends(_get_quiz_service),
-):
+) -> ScoreSubmitResponse:
     """
     사용자의 퀴즈 점수를 덮어씌우며 저장 (같은 user_id + category가
     존재하면 UPDATE)
     """
     try:
-        result = await quiz_service.submit_score(
-            user.id,
-            score_data.model_dump(),
-        )
+        result = await quiz_service.submit_score(user.id, score_data)
         return result
 
     except Exception as e:
