@@ -1,25 +1,135 @@
-.authContainer {
-  margin-top: 50px;
+.page {
+  min-height: calc(100dvh - var(--cq-nav-height, 72px));
   display: flex;
   align-items: center;
-  justify-content: center;
+  padding: 8px 0 34px;
 }
 
 .card {
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  padding: 20px;
+  height: 100%;
+  overflow: hidden;
+  animation: cq-fade-up 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.authButton {
-  font-size: 1.1rem;
-  font-weight: bold;
+.cardBody {
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.header {
+  margin-bottom: 18px;
+}
+
+.title {
+  margin: 0;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  font-size: 2rem;
+}
+
+.subtitle {
+  margin: 10px 0 0;
+  color: rgba(11, 18, 32, 0.7);
+  font-weight: 650;
+  line-height: 1.6;
+}
+
+.label {
+  font-weight: 750;
+  color: rgba(11, 18, 32, 0.8);
+}
+
+.form {
+  margin-top: 14px;
+}
+
+.submit {
+  border-radius: 14px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  padding: 12px 18px;
+}
+
+.footer {
+  margin-top: 18px;
+  color: rgba(11, 18, 32, 0.72);
+  font-weight: 650;
+}
+
+.footerLink {
+  color: var(--cq-brand);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.footerLink:hover {
+  text-decoration: underline;
+}
+
+.posterCol {
+  display: flex;
+}
+
+.poster {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  padding: clamp(18px, 2.8vw, 26px);
+  animation: cq-fade-up 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 90ms;
+}
+
+.posterBackdrop {
+  position: absolute;
+  inset: -24px;
+  background:
+    radial-gradient(900px 600px at 10% 20%, rgba(14, 165, 233, 0.16), transparent 55%),
+    radial-gradient(900px 600px at 90% 10%, rgba(249, 115, 22, 0.12), transparent 55%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.posterHeader {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.posterBadge {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-weight: 850;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  color: rgba(11, 18, 32, 0.86);
+}
+
+.posterText {
+  color: rgba(11, 18, 32, 0.74);
+  font-weight: 700;
+}
+
+.posterImage {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.6);
+  aspect-ratio: 4 / 3;
+}
+
+.posterImg {
+  object-fit: contain;
   padding: 10px;
-  border-radius: 6px;
-  background-color: #007bff;
-  color: white;
 }
 
-.authButton:hover {
-  background-color: #0056b3;
+@media (max-width: 991.98px) {
+  .posterCol {
+    display: none;
+  }
 }

@@ -1,7 +1,8 @@
+.body {
+  min-height: 100dvh;
+}
+
 .main {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
+  min-height: calc(100dvh - var(--cq-nav-height, 72px));
+  padding: clamp(16px, 3vw, 28px);
 }

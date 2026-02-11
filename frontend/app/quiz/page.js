@@ -16,13 +16,19 @@ const getInitialState = (key, defaultValue) => {
   return JSON.parse(localStorage.getItem(key)) || defaultValue;
 };
 
+const STORAGE_KEYS = {
+  answers: "quizAnswers",
+  checkResults: "quizCheckResults",
+  score: "quizScore",
+  incorrectList: "quizResults",
+};
+
 export default function QuizPage() {
   const [quizzes, setQuizzes] = useState([]);
   const [answers, setAnswers] = useState({});
   const [results, setResults] = useState({});
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("전체");
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,11 +44,11 @@ export default function QuizPage() {
     fetchQuizData(selectedCategory);
   }, [selectedCategory]);
 
-  // results 상태 변경 시 localStorage 업데이트
+  // localStorage에서 답안/채점 결과 불러오기
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setAnswers(getInitialState("quizAnswers", {}));
-      setResults(getInitialState("quizResults", {}));
+      setAnswers(getInitialState(STORAGE_KEYS.answers, {}));
+      setResults(getInitialState(STORAGE_KEYS.checkResults, {}));
     }
   }, []);
 
@@ -53,10 +59,7 @@ export default function QuizPage() {
 
   const checkLoginStatus = async () => {
     const result = await verifyToken();
-    if (result && !result.error) {
-      setIsLoggedIn(true);
-    } else {
-      setIsLoggedIn(false);
+    if (!result || result.error) {
       showAlert("warning", "로그인 필요", "퀴즈를 풀려면 먼저 로그인해야 합니다.").then(() => {
         router.push("/login");
       });
@@ -91,7 +94,7 @@ export default function QuizPage() {
   const handleAnswerChange = (quizId, value) => {
     setAnswers((prev) => {
       const updatedAnswers = { ...prev, [quizId]: value };
-      localStorage.setItem("quizAnswers", JSON.stringify(updatedAnswers));
+      localStorage.setItem(STORAGE_KEYS.answers, JSON.stringify(updatedAnswers));
       return updatedAnswers;
     });
   };
@@ -102,10 +105,11 @@ export default function QuizPage() {
 
     const isCorrect = correctAnswers?.includes(userAnswer);
 
-    setResults((prev) => ({
-      ...prev,
-      [quizId]: isCorrect ? "correct" : "incorrect",
-    }));
+    setResults((prev) => {
+      const updated = { ...prev, [quizId]: isCorrect ? "correct" : "incorrect" };
+      localStorage.setItem(STORAGE_KEYS.checkResults, JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleSubmit = async (event) => {
@@ -142,8 +146,8 @@ export default function QuizPage() {
         category: selectedCategory || "전체"
       };
 
-      localStorage.setItem("quizScore", JSON.stringify(scoreData));
-      localStorage.setItem("quizResults", JSON.stringify(incorrectList));
+      localStorage.setItem(STORAGE_KEYS.score, JSON.stringify(scoreData));
+      localStorage.setItem(STORAGE_KEYS.incorrectList, JSON.stringify(incorrectList));
 
       const result = await submitQuizScore(scoreData);
 
@@ -157,12 +161,30 @@ export default function QuizPage() {
     }
   };
 
+  const checkedCount = quizzes.filter((q) => results[q.id]).length;
+  const correctCount = quizzes.filter((q) => results[q.id] === "correct").length;
+
   return (
-    <Container className={`${styles.container} py-4`}>
-      <Card className="shadow p-4">
-        <Card.Title className="text-center fs-2 fw-bold text-primary">
-          코딩 퀴즈 ({selectedCategory || "전체"})
-        </Card.Title>
+    <Container className={`cq-container ${styles.container}`}>
+      <Card className={styles.panel}>
+        <Card.Body className={styles.panelBody}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h1 className={styles.panelTitle}>코딩 퀴즈</h1>
+              <p className={`mb-0 ${styles.panelSubtitle}`}>
+                카테고리 <span className={styles.metaChip}>{selectedCategory || "전체"}</span>
+                <span className={styles.metaDivider} aria-hidden />
+                진행 {checkedCount}/{totalQuizzes} 채점, 정답 {correctCount}
+              </p>
+            </div>
+            <div className={styles.panelMeta}>
+              <span className={styles.metaChip}>
+                Page {currentPage}/{totalPages || 1}
+              </span>
+              <span className={styles.metaChip}>문항 {totalQuizzes}</span>
+            </div>
+          </div>
+
         <CategorySelector
           onSelectCategory={handleCategoryChange}
           selectedCategory={selectedCategory}
@@ -176,19 +198,21 @@ export default function QuizPage() {
           <p className="text-center text-muted">퀴즈가 없습니다.</p>
         ) : (
           <>
-            {currentQuizzes.map((quiz) => (
-              <QuizCard
-                key={quiz.id}
-                quiz={quiz}
-                value={answers[quiz.id] || ""}
-                onChange={handleAnswerChange}
-                onCheckAnswer={handleCheckAnswer}
-                isCorrect={results[quiz.id]}
-              />
-            ))}
+            <div className={styles.quizList}>
+              {currentQuizzes.map((quiz) => (
+                <QuizCard
+                  key={quiz.id}
+                  quiz={quiz}
+                  value={answers[quiz.id] || ""}
+                  onChange={handleAnswerChange}
+                  onCheckAnswer={handleCheckAnswer}
+                  isCorrect={results[quiz.id]}
+                />
+              ))}
+            </div>
 
             {currentPage === totalPages && (
-              <div className="text-end mb-3">
+              <div className={styles.submitRow}>
                 <Button type="submit" variant="success" size="sm" onClick={handleSubmit} disabled={isSubmitting}>
                   {isSubmitting ? "제출 중..." : "제출하기"}
                 </Button>
@@ -196,7 +220,7 @@ export default function QuizPage() {
             )}
 
             {/* 페이지네이션 */}
-            <div className="text-center mt-4">
+            <div className={styles.paginationRow}>
               <Pagination>
                 {/* 이전 버튼 */}
                 <Pagination.Prev
@@ -224,6 +248,7 @@ export default function QuizPage() {
             </div>
           </>
         )}
+        </Card.Body>
       </Card>
     </Container>
   );

@@ -1,43 +1,71 @@
-import { useState } from "react";
-import { Card, Form, Button } from "react-bootstrap";
+import { Alert, Badge, Card, Form, Button } from "react-bootstrap";
 
 export default function QuizCard({ quiz, value, onChange, isCorrect, onCheckAnswer }) {
-  const [isChecked, setIsChecked] = useState(false);
-
-  const handleCheckAnswer = () => {
-    setIsChecked(true);
-    onCheckAnswer(quiz.id);
-  };
+  const isChecked = isCorrect === "correct" || isCorrect === "incorrect";
+  const handleCheckAnswer = () => onCheckAnswer(quiz.id);
 
   return (
-    <Card className={`mb-3 shadow-sm rounded-3 ${isCorrect === "correct" ? "border-success" : isCorrect === "incorrect" ? "border-danger" : ""}`}>
+    <Card
+      className={`mb-3 ${
+        isCorrect === "correct"
+          ? "border-success"
+          : isCorrect === "incorrect"
+            ? "border-danger"
+            : ""
+      }`}
+    >
       <Card.Body>
-        {/* 문제 제목 (질문) */}
-        <Card.Text className="fs-5 fw-bold text-dark">{quiz.question}</Card.Text>
+        <div className="d-flex align-items-start justify-content-between gap-3">
+          <Card.Text className="fs-5 fw-bold text-dark mb-2">
+            {quiz.question}
+          </Card.Text>
+          {isChecked && isCorrect === "correct" && (
+            <Badge bg="success" className="mt-1">
+              Correct
+            </Badge>
+          )}
+          {isChecked && isCorrect === "incorrect" && (
+            <Badge bg="danger" className="mt-1">
+              Incorrect
+            </Badge>
+          )}
+        </div>
 
-        {/* 문제 설명 */}
-        <Card.Text className="text-muted">{quiz.explanation}</Card.Text>
+        <Card.Text className="text-muted mb-3">{quiz.explanation}</Card.Text>
 
-        {/* 정답 입력 */}
         <Form.Control
           type="text"
           placeholder="정답 입력"
           value={value}
           onChange={(e) => onChange(quiz.id, e.target.value)}
-          className={`mt-2 p-2 ${isChecked && isCorrect === "correct" ? "bg-light text-success" : isChecked && isCorrect === "incorrect" ? "bg-light text-danger" : ""}`}
-          disabled={isChecked} // 정답 확인 후 입력 비활성화
+          className={`p-2 ${
+            isChecked && isCorrect === "correct"
+              ? "bg-light text-success"
+              : isChecked && isCorrect === "incorrect"
+                ? "bg-light text-danger"
+                : ""
+          }`}
+          disabled={isChecked}
         />
 
-        {/* 정답 확인 버튼 */}
         {!isChecked && (
-          <Button variant="primary" size="sm" className="mt-2" onClick={handleCheckAnswer}>
-            정답 확인
-          </Button>
+          <div className="d-flex justify-content-end mt-2">
+            <Button variant="primary" size="sm" onClick={handleCheckAnswer}>
+              정답 확인
+            </Button>
+          </div>
         )}
 
-        {/* 정답 여부 메시지 */}
-        {isChecked && isCorrect === "correct" && <p className="text-success mt-2">✅ 정답입니다!</p>}
-        {isChecked && isCorrect === "incorrect" && <p className="text-danger mt-2">❌ 오답입니다! 정답: {quiz.answer}</p>}
+        {isChecked && isCorrect === "correct" && (
+          <Alert variant="success" className="mt-3 mb-0 py-2">
+            ✅ 정답입니다!
+          </Alert>
+        )}
+        {isChecked && isCorrect === "incorrect" && (
+          <Alert variant="danger" className="mt-3 mb-0 py-2">
+            ❌ 오답입니다. 정답: <code>{quiz.answer}</code>
+          </Alert>
+        )}
       </Card.Body>
     </Card>
   );
