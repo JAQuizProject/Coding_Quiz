@@ -32,7 +32,8 @@ export default function QuizPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const quizzesPerPage = 5;
+  const quizzesPerPage = 10;
+  const pageNumberBlockSize = 10;
   const router = useRouter();
   const showAlert = useAlert();
 
@@ -84,6 +85,13 @@ export default function QuizPage() {
   const indexOfLastQuiz = currentPage * quizzesPerPage;
   const indexOfFirstQuiz = indexOfLastQuiz - quizzesPerPage;
   const currentQuizzes = quizzes.slice(indexOfFirstQuiz, indexOfLastQuiz);
+  const currentPageBlock = Math.floor((currentPage - 1) / pageNumberBlockSize);
+  const startPage = currentPageBlock * pageNumberBlockSize + 1;
+  const endPage = Math.min(startPage + pageNumberBlockSize - 1, totalPages);
+  const visiblePages = Array.from(
+    { length: Math.max(0, endPage - startPage + 1) },
+    (_, index) => startPage + index
+  );
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -229,13 +237,13 @@ export default function QuizPage() {
                 />
 
                 {/* 페이지 숫자 버튼 */}
-                {[...Array(totalPages)].map((_, i) => (
+                {visiblePages.map((pageNo) => (
                   <Pagination.Item
-                    key={i + 1}
-                    active={i + 1 === currentPage}
-                    onClick={() => handlePageChange(i + 1)}
+                    key={pageNo}
+                    active={pageNo === currentPage}
+                    onClick={() => handlePageChange(pageNo)}
                   >
-                    {i + 1}
+                    {pageNo}
                   </Pagination.Item>
                 ))}
 
