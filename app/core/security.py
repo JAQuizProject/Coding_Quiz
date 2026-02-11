@@ -1,20 +1,23 @@
-import os
 from datetime import datetime, timedelta
 from typing import Optional
 
-import jwt
-from dotenv import load_dotenv
 import bcrypt
+import jwt
+from pydantic import ValidationError
 
-# 환경 변수 로드
-load_dotenv()
+from .config import config
+from .schemas import APIModel
 
 # JWT 설정
-# 기본값 설정
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key")
+SECRET_KEY = config.SECRET_KEY
 ALGORITHM = "HS256"
 # 토큰 유효 시간 (30분)
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = config.ACCESS_TOKEN_EXPIRE_MINUTES
+
+
+class TokenPayload(APIModel):
+    id: str
+    email: str
 
 
 def get_password_hash(password: str) -> str:
@@ -55,7 +58,7 @@ def create_access_token(
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def decode_access_token(token: str) -> Optional[dict]:
+def decode_access_token(token: str) -> Optional[TokenPayload]:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
@@ -67,13 +70,14 @@ def decode_access_token(token: str) -> Optional[dict]:
             print(f"JWT에 'sub' 또는 'id' 키 없음, Payload: {payload}")
             return None
 
-        user_id = payload.get("id")
-        email = payload.get("sub")
-        if not isinstance(user_id, str) or not isinstance(email, str):
+        try:
+            return TokenPayload(
+                id=payload.get("id"),
+                email=payload.get("sub"),
+            )
+        except ValidationError:
             print(f"JWT 타입이 올바르지 않음, Payload: {payload}")
             return None
-
-        return {"id": user_id, "email": email}
 
     except jwt.ExpiredSignatureError:
         print("토큰이 만료되었습니다.")

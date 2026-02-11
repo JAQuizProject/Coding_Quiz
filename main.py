@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core import csv_listener  # CSV 감시 모듈 import
 from app.core.database import init_db
+from app.core.schemas import MessageResponse
 from app.modules import api_router
 
 # 현재 실행 중인 파일의 디렉토리를 기준으로 Python path 설정
@@ -44,7 +45,7 @@ init_db()
 app.include_router(api_router)
 
 
-@app.get("/")
+@app.get("/", response_model=MessageResponse)
 def read_root():
     return {"message": "Welcome to the Coding Quiz API!"}
 
