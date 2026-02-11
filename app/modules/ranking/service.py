@@ -1,7 +1,8 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from app.modules.ranking.repository import RankingRepository
+from app.modules.ranking.schemas import RankingItem
 
 """
 RankingService
@@ -18,7 +19,7 @@ class RankingService:
     def __init__(self, repo: RankingRepository):
         self.repo = repo
 
-    async def get_ranking(self, category: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
+    async def get_ranking(self, category: Optional[str] = None, limit: int = 10) -> list[RankingItem]:
         """랭킹 데이터를 포맷팅하여 반환합니다.
 
         Args:
@@ -26,11 +27,11 @@ class RankingService:
             limit (int): 반환할 최대 수
 
         Returns:
-            List[Dict[str, Any]]: rank, username, score, category, date 형식의 리스트
+            list[RankingItem]: rank, username, score, category, date 형식의 리스트
         """
         rows = self.repo.fetch_ranking(category, limit)
-        result = []
-        for i, r in enumerate(rows):
+        result: list[RankingItem] = []
+        for i, r in enumerate(rows, start=1):
             created_at = r.get("created_at")
             if isinstance(created_at, str):
                 try:
@@ -42,13 +43,13 @@ class RankingService:
                     created_at = None
 
             result.append(
-                {
-                    "rank": i + 1,
-                    "username": r.get("username"),
-                    "score": r.get("score"),
-                    "category": r.get("category"),
-                    "date": created_at.strftime("%Y-%m-%d %H:%M") if created_at else "N/A",
-                }
+                RankingItem(
+                    rank=i,
+                    username=str(r.get("username") or ""),
+                    score=int(r.get("score") or 0),
+                    category=str(r.get("category") or "전체"),
+                    date=created_at.strftime("%Y-%m-%d %H:%M") if created_at else "N/A",
+                )
             )
 
         return result
