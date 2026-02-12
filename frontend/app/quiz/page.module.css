@@ -37,6 +37,7 @@
 .panelMeta {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
 }
 
@@ -59,6 +60,12 @@
   background: rgba(11, 18, 32, 0.28);
   margin: 0 10px;
   transform: translateY(-2px);
+}
+
+.resetBtn {
+  border-radius: 999px;
+  font-weight: 700;
+  padding-inline: 14px;
 }
 
 .quizList {

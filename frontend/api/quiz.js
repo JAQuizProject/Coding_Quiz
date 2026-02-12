@@ -6,7 +6,9 @@ export const getQuizData = async (category = "") => {
   if (!token) return { error: "로그인이 필요합니다." };
 
   try {
-    const url = category ? `${BASE_URL}/quiz/get?category=${category}` : `${BASE_URL}/quiz/get`;
+    const url = category
+      ? `${BASE_URL}/quiz/get?category=${encodeURIComponent(category)}`
+      : `${BASE_URL}/quiz/get`;
 
     const response = await fetch(url, {
       method: "GET",
