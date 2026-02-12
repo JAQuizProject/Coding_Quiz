@@ -99,19 +99,24 @@ export default function Signup() {
           <div className={`${styles.poster} cq-surface`}>
             <div className={styles.posterBackdrop} aria-hidden />
             <div className={styles.posterHeader}>
-              <span className={styles.posterBadge}>NEW</span>
+              <span className={styles.posterBadge}>TRACK</span>
               <span className={styles.posterText}>
-                가입 후 바로 퀴즈를 시작할 수 있어요.
+                가입하면 점수 히스토리와 랭킹 도전이 바로 시작돼요.
               </span>
             </div>
             <div className={styles.posterImage}>
               <Image
-                src="/signup.png"
-                alt="회원가입 화면 예시"
+                src="/illustrations/signup-score-track.svg"
+                alt="회원가입 후 점수 트래킹 시작 안내"
                 fill
                 sizes="(max-width: 992px) 100vw, 520px"
                 className={styles.posterImg}
               />
+            </div>
+            <div className={styles.posterMeta}>
+              <span className={styles.metaPill}>학습 기록 시작</span>
+              <span className={styles.metaPill}>개인 점수 추적</span>
+              <span className={styles.metaPill}>랭킹 도전 준비</span>
             </div>
           </div>
         </Col>

@@ -86,19 +86,24 @@ export default function Login() {
           <div className={`${styles.poster} cq-surface`}>
             <div className={styles.posterBackdrop} aria-hidden />
             <div className={styles.posterHeader}>
-              <span className={styles.posterBadge}>TIP</span>
+              <span className={styles.posterBadge}>SCORE</span>
               <span className={styles.posterText}>
-                정답 확인 후 제출하면 점수가 저장돼요.
+                로그인하면 퀴즈 점수가 자동 저장되고 랭킹에 반영돼요.
               </span>
             </div>
             <div className={styles.posterImage}>
               <Image
-                src="/login.png"
-                alt="로그인 화면 예시"
+                src="/illustrations/login-score-save.svg"
+                alt="점수 저장 및 랭킹 반영 안내"
                 fill
                 sizes="(max-width: 992px) 100vw, 520px"
                 className={styles.posterImg}
               />
+            </div>
+            <div className={styles.posterMeta}>
+              <span className={styles.metaPill}>제출 즉시 저장</span>
+              <span className={styles.metaPill}>카테고리별 누적</span>
+              <span className={styles.metaPill}>랭킹 자동 반영</span>
             </div>
           </div>
         </Col>

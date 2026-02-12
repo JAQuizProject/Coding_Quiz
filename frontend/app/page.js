@@ -66,13 +66,47 @@ export default function Home() {
                   <div className={styles.statLabel}>중간에 나가도 답안 유지</div>
                 </div>
               </div>
+
+              <div className={`${styles.detailGrid} ${styles.reveal3}`}>
+                <article className={styles.detailCard}>
+                  <div className={styles.detailImageWrap}>
+                    <Image
+                      src="/illustrations/detail-random10.svg"
+                      alt="전체 챕터 랜덤 10문제"
+                      fill
+                      sizes="(max-width: 992px) 100vw, 250px"
+                      className={styles.detailImage}
+                    />
+                  </div>
+                  <h3 className={styles.detailTitle}>전체 모드 랜덤 10문제</h3>
+                  <p className={styles.detailBody}>
+                    매번 다른 세트로 출제되어 반복 학습에 유리합니다.
+                  </p>
+                </article>
+
+                <article className={styles.detailCard}>
+                  <div className={styles.detailImageWrap}>
+                    <Image
+                      src="/illustrations/detail-admarket.svg"
+                      alt="ADmarket 카테고리 묶음"
+                      fill
+                      sizes="(max-width: 992px) 100vw, 250px"
+                      className={styles.detailImage}
+                    />
+                  </div>
+                  <h3 className={styles.detailTitle}>ADmarket 통합 카테고리</h3>
+                  <p className={styles.detailBody}>
+                    Corp, Bidding, Message를 한 번에 학습할 수 있어요.
+                  </p>
+                </article>
+              </div>
             </Col>
 
             <Col lg={6} className={styles.reveal2}>
               <div className={styles.preview}>
                 <Image
-                  src="/main.png"
-                  alt="Coding Quiz 미리보기"
+                  src="/illustrations/hero-dashboard.svg"
+                  alt="Coding Quiz 대시보드 일러스트"
                   fill
                   priority
                   sizes="(max-width: 992px) 100vw, 520px"

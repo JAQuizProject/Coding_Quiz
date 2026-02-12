@@ -1,0 +1,52 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="saveBg" x1="68" y1="24" x2="572" y2="396" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E1F4FF"/>
+      <stop offset="1" stop-color="#FFF1E7"/>
+    </linearGradient>
+    <linearGradient id="saveSky" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#0369A1"/>
+    </linearGradient>
+    <linearGradient id="saveOrange" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FB923C"/>
+      <stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="640" height="420" rx="30" fill="url(#saveBg)"/>
+  <circle cx="540" cy="88" r="70" fill="#0EA5E9" fill-opacity="0.14"/>
+  <circle cx="92" cy="348" r="84" fill="#FB923C" fill-opacity="0.14"/>
+
+  <rect x="56" y="56" width="528" height="308" rx="24" fill="white" fill-opacity="0.9"/>
+  <rect x="86" y="84" width="188" height="16" rx="8" fill="#0F172A" fill-opacity="0.16"/>
+  <rect x="86" y="110" width="168" height="10" rx="5" fill="#0F172A" fill-opacity="0.1"/>
+
+  <rect x="86" y="146" width="220" height="188" rx="18" fill="#F8FAFC"/>
+  <text x="108" y="176" fill="#0F172A" fill-opacity="0.7" font-size="14" font-family="Arial, sans-serif" font-weight="700">최근 점수</text>
+  <text x="108" y="222" fill="#0F172A" font-size="46" font-family="Arial, sans-serif" font-weight="800">87</text>
+  <text x="188" y="222" fill="#0F172A" fill-opacity="0.55" font-size="20" font-family="Arial, sans-serif" font-weight="700">점</text>
+  <rect x="108" y="246" width="170" height="12" rx="6" fill="#0EA5E9" fill-opacity="0.2"/>
+  <rect x="108" y="246" width="148" height="12" rx="6" fill="url(#saveSky)"/>
+  <rect x="108" y="274" width="124" height="30" rx="15" fill="#0EA5E9" fill-opacity="0.14"/>
+  <text x="170" y="293" text-anchor="middle" fill="#0369A1" font-size="14" font-family="Arial, sans-serif" font-weight="800">자동 저장됨</text>
+
+  <rect x="324" y="146" width="230" height="86" rx="16" fill="#F8FAFC"/>
+  <text x="348" y="174" fill="#0F172A" fill-opacity="0.7" font-size="13" font-family="Arial, sans-serif" font-weight="700">랭킹 반영</text>
+  <rect x="348" y="188" width="182" height="8" rx="4" fill="#0F172A" fill-opacity="0.1"/>
+  <rect x="348" y="204" width="120" height="8" rx="4" fill="#0F172A" fill-opacity="0.1"/>
+  <rect x="348" y="216" width="96" height="8" rx="4" fill="#0F172A" fill-opacity="0.1"/>
+  <circle cx="514" cy="190" r="16" fill="url(#saveSky)"/>
+  <path d="M508 190L513 195L521 186" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="324" y="248" width="230" height="86" rx="16" fill="#F8FAFC"/>
+  <text x="348" y="276" fill="#0F172A" fill-opacity="0.7" font-size="13" font-family="Arial, sans-serif" font-weight="700">카테고리별 기록</text>
+  <rect x="348" y="294" width="78" height="24" rx="12" fill="#0EA5E9" fill-opacity="0.18"/>
+  <text x="387" y="310" text-anchor="middle" fill="#0369A1" font-size="12" font-family="Arial, sans-serif" font-weight="700">ADmarket</text>
+  <rect x="436" y="294" width="74" height="24" rx="12" fill="#FB923C" fill-opacity="0.18"/>
+  <text x="473" y="310" text-anchor="middle" fill="#C2410C" font-size="12" font-family="Arial, sans-serif" font-weight="700">FastAPI</text>
+
+  <rect x="466" y="70" width="98" height="46" rx="14" fill="url(#saveOrange)"/>
+  <text x="515" y="99" text-anchor="middle" fill="white" font-size="18" font-family="Arial, sans-serif" font-weight="800">SAVE</text>
+</svg>
+
