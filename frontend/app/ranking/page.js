@@ -7,8 +7,8 @@ import { Badge, Card, Container, Table, Spinner, Form } from "react-bootstrap";
 export default function RankingPage() {
   const [ranking, setRanking] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [category, setCategory] = useState("전체"); // 기본값: 전체
-  const [categories, setCategories] = useState(["전체"]); // 기본값: 전체
+  const [category, setCategory] = useState("전체");
+  const [categories, setCategories] = useState(["전체"]);
 
   useEffect(() => {
     fetchRanking(category);
@@ -32,22 +32,22 @@ export default function RankingPage() {
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const result = await getCategories();
-      if (result && result.data) {
-        setCategories(["전체", ...result.data]); // "전체" 추가
-      }
-    } catch (error) {
-      console.error("카테고리 데이터를 불러오는 중 오류 발생:", error);
-    }
-  };
-
   const medalForRank = (rankNo) => {
     if (rankNo === 1) return "🥇";
     if (rankNo === 2) return "🥈";
     if (rankNo === 3) return "🥉";
     return "•";
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const result = await getCategories();
+      if (result && result.data) {
+        setCategories(["전체", ...result.data.filter((cat) => cat !== "전체")]);
+      }
+    } catch (error) {
+      console.error("카테고리 데이터를 불러오는 중 오류 발생:", error);
+    }
   };
 
   return (
