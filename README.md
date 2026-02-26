@@ -118,13 +118,19 @@ npm run dev
 
 ## 환경 변수
 
-루트 `.env` 예시:
+백엔드 루트 `.env` 예시:
 
 ```env
 ENV=development
+DEBUG=true
+BACKEND_HOST=0.0.0.0
+BACKEND_PORT=8000
 DATABASE_URL_DEV=sqlite:///./quiz_app.db
-SECRET_KEY=your_secret_key
+# 운영에서 PostgreSQL 사용 시 설정
+# DATABASE_URL=postgresql+psycopg2://user:password@host:5432/dbname
+SECRET_KEY=your_secret_key_change_me
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+CORS_ALLOWED_ORIGINS=http://localhost:3000
 ```
 
 프론트 `frontend/.env.local` 예시:
@@ -132,6 +138,40 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```env
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ```
+
+템플릿 파일:
+- `.env.example`
+- `frontend/.env.example`
+
+---
+
+## 배포 순서 (권장: Vercel + Render)
+
+### 1) PostgreSQL 준비
+- 운영 DB를 생성하고 접속 문자열(`DATABASE_URL`) 확보
+
+### 2) 백엔드 배포 (Render 등)
+- 이 저장소의 `Dockerfile`로 배포
+- 환경 변수 설정:
+  - `ENV=production`
+  - `DEBUG=false`
+  - `DATABASE_URL=postgresql+psycopg2://...`
+  - `SECRET_KEY=...`
+  - `ACCESS_TOKEN_EXPIRE_MINUTES=30`
+  - `CORS_ALLOWED_ORIGINS=https://<프론트도메인>`
+- 프론트 도메인이 여러 개인 경우 콤마로 구분:
+  - `CORS_ALLOWED_ORIGINS=https://a.example.com,https://b.example.com`
+
+### 3) 프론트 배포 (Vercel)
+- `frontend` 디렉터리를 프로젝트 루트로 지정
+- 환경 변수 설정:
+  - `NEXT_PUBLIC_API_URL=https://<백엔드도메인>`
+
+### 4) 배포 확인
+- `POST /auth/signup`
+- `POST /auth/login`
+- `GET /quiz/categories`
+- `GET /ranking/get?category=전체`
 
 ---
 

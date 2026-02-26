@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core import csv_listener  # CSV 감시 모듈 import
+from app.core.config import config
 from app.core.database import init_db
 from app.core.schemas import MessageResponse
 from app.modules import api_router
@@ -12,27 +13,12 @@ from app.modules import api_router
 # 현재 실행 중인 파일의 디렉토리를 기준으로 Python path 설정
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-app = FastAPI(debug=True)
-
-# 환경별로 CORS 도메인 설정
-LOCAL_ORIGINS = ["http://localhost:3000"]
-DEPLOYED_ORIGINS = ["http://44.203.184.203:3000"]
-
-# 현재 실행 환경 확인
-ENVIRONMENT = os.getenv("ENV", "development")
-
-# 로컬이면 localhost, 배포 환경(production)이면 배포 도메인 허용
-if ENVIRONMENT == "development":
-    ALLOWED_ORIGINS = LOCAL_ORIGINS
-elif ENVIRONMENT == "production":
-    ALLOWED_ORIGINS = DEPLOYED_ORIGINS
-else:
-    ALLOWED_ORIGINS = []  # 그 외 환경에서는 CORS 차단 (필요에 따라 수정 가능)
+app = FastAPI(debug=config.DEBUG)
 
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=config.CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

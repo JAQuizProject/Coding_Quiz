@@ -13,10 +13,10 @@ RUN pip install --no-cache-dir "poetry==$POETRY_VERSION"
 
 # 의존성 설치
 COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-ansi
+RUN poetry install --no-ansi --extras "postgres"
 
 # 소스 코드 복사
 COPY . .
 
 # FastAPI 실행 (Uvicorn)
-CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "poetry run uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
