@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir "poetry==$POETRY_VERSION"
 
 # 의존성 설치
 COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-ansi --extras "postgres"
+RUN poetry install --no-ansi --extras "postgres" --no-root
 
 # 소스 코드 복사
 COPY . .
