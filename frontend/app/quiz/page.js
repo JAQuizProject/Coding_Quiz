@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getQuizData, submitQuizScore } from "../../api/quiz";
 import { verifyToken } from "../../api/auth";
@@ -40,13 +40,35 @@ export default function QuizPage() {
   const router = useRouter();
   const showAlert = useAlert();
 
-  useEffect(() => {
-    checkLoginStatus();
+  const checkLoginStatus = useCallback(async () => {
+    const result = await verifyToken();
+    if (!result || result.error) {
+      showAlert("warning", "로그인 필요", "퀴즈를 풀려면 먼저 로그인해야 합니다.").then(() => {
+        router.push("/login");
+      });
+    }
+  }, [router, showAlert]);
+
+  const fetchQuizData = useCallback(async (category) => {
+    setIsLoading(true);
+    try {
+      const result = await getQuizData(category);
+      setQuizzes(result?.data || []);
+    } catch (error) {
+      console.error("퀴즈 데이터를 불러오는데 실패했습니다.", error);
+      setQuizzes([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
+    checkLoginStatus();
+  }, [checkLoginStatus]);
+
+  useEffect(() => {
     fetchQuizData(selectedCategory);
-  }, [selectedCategory]);
+  }, [fetchQuizData, selectedCategory]);
 
   // localStorage에서 답안/채점 결과 불러오기
   useEffect(() => {
@@ -65,28 +87,6 @@ export default function QuizPage() {
   const handleCategoryChange = (category) => {
     setCurrentPage(1);
     setSelectedCategory(category);
-  };
-
-  const checkLoginStatus = async () => {
-    const result = await verifyToken();
-    if (!result || result.error) {
-      showAlert("warning", "로그인 필요", "퀴즈를 풀려면 먼저 로그인해야 합니다.").then(() => {
-        router.push("/login");
-      });
-    }
-  };
-
-  const fetchQuizData = async (category) => {
-    setIsLoading(true);
-    try {
-      const result = await getQuizData(category);
-      setQuizzes(result?.data || []);
-    } catch (error) {
-      console.error("퀴즈 데이터를 불러오는데 실패했습니다.", error);
-      setQuizzes([]);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const resetQuizProgress = ({ reloadQuizzes = false } = {}) => {

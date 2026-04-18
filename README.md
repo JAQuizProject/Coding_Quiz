@@ -190,6 +190,7 @@ NEXT_PUBLIC_FIREBASE_VAPID_KEY=...
 루트 `.env`에 notification-be 위치와 테스트 기본값을 넣습니다.
 
 ```env
+# Local/manual testing only. Keep this false in production.
 FCM_TEST_PROXY_ENABLED=true
 TVCF_NOTIFICATION_BASE_URL=http://127.0.0.1:8001
 TVCF_NOTIFICATION_DEVICE_PATH=/v1/devices
