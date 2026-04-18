@@ -1,11 +1,13 @@
 from fastapi import APIRouter
 
 from .auth.router import router as auth_router
+from .notification_test.router import router as notification_test_router
 from .quiz.router import router as quiz_router
 from .ranking.router import router as ranking_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
+api_router.include_router(notification_test_router, prefix="/fcm-test", tags=["fcm-test"])
 api_router.include_router(quiz_router, prefix="/quiz", tags=["quiz"])
 api_router.include_router(ranking_router, prefix="/ranking", tags=["ranking"])
 

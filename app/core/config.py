@@ -42,6 +42,16 @@ class Config(BaseModel):
     SECRET_KEY: str = Field(default="mysecretkey")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30)
     CORS_ALLOWED_ORIGINS: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    FCM_TEST_PROXY_ENABLED: bool = Field(default=True)
+    TVCF_NOTIFICATION_BASE_URL: str = Field(default="http://127.0.0.1:8001")
+    TVCF_NOTIFICATION_DEVICE_PATH: str = Field(default="/v1/devices")
+    TVCF_NOTIFICATION_SEND_USER_PATH: str = Field(default="/v1/messages:sendUser")
+    TVCF_NOTIFICATION_AUTH_TOKEN: str | None = Field(default=None)
+    TVCF_NOTIFICATION_ACCESS_TOKEN: str | None = Field(default=None)
+    TVCF_NOTIFICATION_USER_AGENT: str = Field(default="CodingQuiz-FCM-Test/1.0")
+    TVCF_NOTIFICATION_TIMEOUT_SECONDS: int = Field(default=10)
+    FCM_TEST_USER_ID: str | None = Field(default=None)
+    FCM_TEST_TEMPLATE_CODE: str | None = Field(default=None)
 
 
 def load_config() -> Config:
@@ -55,6 +65,7 @@ def load_config() -> Config:
     debug = _parse_bool(os.getenv("DEBUG"), default=not is_production)
     default_origins = [] if is_production else ["http://localhost:3000"]
     cors_allowed_origins = _parse_origins(os.getenv("CORS_ALLOWED_ORIGINS"), default_origins)
+    fcm_test_proxy_enabled = _parse_bool(os.getenv("FCM_TEST_PROXY_ENABLED"), default=not is_production)
 
     return Config(
         BACKEND_HOST=os.getenv("BACKEND_HOST", "0.0.0.0"),
@@ -68,6 +79,19 @@ def load_config() -> Config:
         SECRET_KEY=os.getenv("SECRET_KEY", "mysecretkey"),
         ACCESS_TOKEN_EXPIRE_MINUTES=os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30),
         CORS_ALLOWED_ORIGINS=cors_allowed_origins,
+        FCM_TEST_PROXY_ENABLED=fcm_test_proxy_enabled,
+        TVCF_NOTIFICATION_BASE_URL=os.getenv("TVCF_NOTIFICATION_BASE_URL", "http://127.0.0.1:8001"),
+        TVCF_NOTIFICATION_DEVICE_PATH=os.getenv("TVCF_NOTIFICATION_DEVICE_PATH", "/v1/devices"),
+        TVCF_NOTIFICATION_SEND_USER_PATH=os.getenv(
+            "TVCF_NOTIFICATION_SEND_USER_PATH",
+            "/v1/messages:sendUser",
+        ),
+        TVCF_NOTIFICATION_AUTH_TOKEN=os.getenv("TVCF_NOTIFICATION_AUTH_TOKEN"),
+        TVCF_NOTIFICATION_ACCESS_TOKEN=os.getenv("TVCF_NOTIFICATION_ACCESS_TOKEN"),
+        TVCF_NOTIFICATION_USER_AGENT=os.getenv("TVCF_NOTIFICATION_USER_AGENT", "CodingQuiz-FCM-Test/1.0"),
+        TVCF_NOTIFICATION_TIMEOUT_SECONDS=int(os.getenv("TVCF_NOTIFICATION_TIMEOUT_SECONDS", 10)),
+        FCM_TEST_USER_ID=os.getenv("FCM_TEST_USER_ID"),
+        FCM_TEST_TEMPLATE_CODE=os.getenv("FCM_TEST_TEMPLATE_CODE"),
     )
 
 
