@@ -101,26 +101,13 @@ export default function FcmTestPage() {
   }, []);
 
   useEffect(() => {
-    const handleServiceWorkerMessage = (event) => {
-      if (event.data?.type === "FCM_BACKGROUND_MESSAGE") {
-        appendLog("background", event.data.payload);
-      }
-    };
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.addEventListener("message", handleServiceWorkerMessage);
-    }
-
     return () => {
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.removeEventListener("message", handleServiceWorkerMessage);
-      }
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
     };
-  }, [appendLog]);
+  }, []);
 
   const issueToken = async () => {
     setError("");
