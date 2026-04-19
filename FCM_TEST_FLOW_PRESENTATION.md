@@ -200,6 +200,9 @@ token 발급 = 알림 받을 주소를 만드는 단계
 ```text
 Coding_Quiz frontend
   -> Coding_Quiz backend /fcm-test/register-device
+  -> Coding_Quiz backend가 로그인 JWT로 현재 user 확인
+  -> user.username을 notification-be UserId로 사용
+  -> notification-be용 임시 JWT { userId: username } 생성
   -> tvcf-notification-be /v1/devices
   -> NotificationDevice_TM에 token 저장
 ```
@@ -208,7 +211,7 @@ notification-be로 가는 요청은 개념적으로 아래와 같다.
 
 ```http
 POST /v1/devices
-Cookie: access_token=<userId가 들어있는 token>
+Cookie: access_token=<Coding_Quiz backend가 만든 notification-be용 JWT>
 Content-Type: application/json
 
 {
@@ -241,7 +244,14 @@ Token 등록은 알림 발송이 아니다.
 token 등록 = user_id와 FCM token을 notification-be DB에 연결하는 단계
 ```
 
-또 현재 테스트에서는 등록 대상 유저가 화면의 User ID input이 아니라 `TVCF_NOTIFICATION_ACCESS_TOKEN` 안의 `userId`로 결정된다.
+현재 테스트에서는 등록 대상 유저가 화면 입력값이나 env 값이 아니라 Coding_Quiz 로그인 유저의 `username`으로 결정된다.
+
+```text
+Coding_Quiz 로그인 user.username
+  = notification-be User_TM.UserId
+```
+
+따라서 notification-be DB에는 같은 `UserId`가 있어야 하고, username은 notification-be 제약에 맞게 20자 이하여야 한다.
 
 프론트에서 중복 등록 요청을 줄일 수는 있지만 완전히 막을 수는 없다. 그래서 서버 등록 API는 같은 token이 다시 들어와도 안전해야 한다.
 
@@ -278,7 +288,7 @@ POST /v1/messages:sendUser
 Content-Type: application/json
 
 {
-  "user_id": "seed_user_001",
+  "user_id": "<Coding_Quiz 로그인 user.username>",
   "template_code": "d6aa9a90-086e-464d-ba62-909dea8e2421"
 }
 ```

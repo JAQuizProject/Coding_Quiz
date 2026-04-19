@@ -367,7 +367,7 @@ NotificationMessage_TM 발송 이력 저장
 | --- | --- | --- | --- | --- | --- |
 | TVCF Web dev | company-fcm-dev | tvcf-web-dev | dev Web app config + dev VAPID | notification-be dev 호출 | User_TM.UserId |
 | AdMarket Web dev | company-fcm-dev | admarket-web-dev | dev Web app config + dev VAPID | notification-be dev 호출 | User_TM.UserId |
-| Coding_Quiz test | coding-quiz-fcm-test | coding-quiz-local-test | test Web app config + test VAPID | local notification-be 호출 | seed_user_001 |
+| Coding_Quiz test | coding-quiz-fcm-test | coding-quiz-local-test | test Web app config + test VAPID | local notification-be 호출 | Coding_Quiz 로그인 username |
 | TVCF Web prod | company-fcm-prod | tvcf-web-prod | prod Web app config + prod VAPID | notification-be prod 호출 | User_TM.UserId |
 
 관리 원칙:

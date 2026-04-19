@@ -25,10 +25,10 @@ tvcf_dev DB 연결 정상
 notification-be migration 적용 완료
 Coding_Quiz backend /fcm-test/config 설정 정상
 notification-be /v1/templates 조회 정상
-User_TM에 seed_user_001 존재
+User_TM에 Coding_Quiz 로그인 username과 같은 UserId 필요
 NotificationTemplate_TM에 테스트 템플릿 존재
-NotificationDevice_TM에 seed_user_001의 FCM token 1건 등록됨
-Firebase env를 명시한 별도 프로세스에서 sendUser success_count=1 응답 확인
+Token 등록 시 Coding_Quiz 로그인 username 기준으로 NotificationDevice_TM 저장
+Firebase env를 명시한 notification-be에서 sendUser success_count=1 확인 가능
 ```
 
 현재 로컬 DB 기준:
@@ -38,13 +38,13 @@ DB:
 tvcf_dev
 
 User:
-seed_user_001
+<Coding_Quiz 로그인 username>
 
 Template:
-d6aa9a90-086e-464d-ba62-909dea8e2421
+<notification-be NotificationTemplate_TM.Code>
 
 Device token:
-seed_user_001 기준 1건 등록됨
+Token 등록 버튼 실행 후 <Coding_Quiz 로그인 username> 기준으로 저장됨
 ```
 
 현재 Coding_Quiz backend 설정 확인 결과:
@@ -55,9 +55,7 @@ seed_user_001 기준 1건 등록됨
   "notification_base_url": "http://127.0.0.1:8001",
   "device_path": "/v1/devices",
   "send_user_path": "/v1/messages:sendUser",
-  "default_user_id": "seed_user_001",
-  "default_template_code": "d6aa9a90-086e-464d-ba62-909dea8e2421",
-  "has_notification_access_token": true
+  "default_template_code": "<notification-be template code>"
 }
 ```
 
@@ -84,6 +82,16 @@ before_messages=0
 sendUser response: target_count=1, success_count=1, failure_count=0
 after_messages=1
 latest status=SUCCESS
+```
+
+현재 Coding_Quiz 테스트에서는 별도 하드코딩 user id나 access token env를 사용하지 않는다.
+
+```text
+Coding_Quiz 로그인 JWT
+  -> Coding_Quiz backend에서 현재 User 조회
+  -> User.username을 notification-be User_TM.UserId로 사용
+  -> notification-be용 임시 JWT { userId: username } 생성
+  -> /v1/devices Cookie: access_token=<임시 JWT>
 ```
 
 ## 2. 현재 테스트가 의미하는 것

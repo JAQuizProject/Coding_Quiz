@@ -187,7 +187,7 @@ NEXT_PUBLIC_FIREBASE_VAPID_KEY=...
 
 ### 2) CodingQuiz 백엔드에서 notification-be 연결
 
-루트 `.env`에 notification-be 위치와 테스트 기본값을 넣습니다.
+루트 `.env`에 notification-be 위치와 테스트 template 기본값을 넣습니다.
 
 ```env
 # Local/manual testing only. Keep this false in production.
@@ -195,13 +195,10 @@ FCM_TEST_PROXY_ENABLED=true
 TVCF_NOTIFICATION_BASE_URL=http://127.0.0.1:8001
 TVCF_NOTIFICATION_DEVICE_PATH=/v1/devices
 TVCF_NOTIFICATION_SEND_USER_PATH=/v1/messages:sendUser
-TVCF_NOTIFICATION_ACCESS_TOKEN=<notification-be access_token cookie value>
-FCM_TEST_USER_ID=<notification-be User_TM.UserId>
 FCM_TEST_TEMPLATE_CODE=<NotificationTemplate_TM.Code>
 ```
 
-`TVCF_NOTIFICATION_ACCESS_TOKEN`은 `/v1/devices` 등록에 필요합니다. notification-be는 현재
-로그인 사용자를 `access_token` 쿠키에서 읽고, 그 사용자에게 FCM token을 등록합니다.
+이 테스트는 Coding_Quiz 로그인 유저의 `username`을 notification-be의 `User_TM.UserId`로 사용합니다. 따라서 notification-be DB에 같은 `UserId`가 있어야 하고, username은 notification-be 제약에 맞게 20자 이하여야 합니다. Coding_Quiz 백엔드는 로그인 JWT를 확인한 뒤 notification-be용 임시 JWT `{ "userId": "<username>" }`를 만들어 `/v1/devices`에 전달합니다.
 
 ### 3) 서버 실행
 
@@ -224,14 +221,15 @@ npm run dev
 
 브라우저에서 `http://localhost:3000/fcm-test`를 엽니다.
 
-1. `FCM token 발급`
-2. `Token 등록`
-3. `CodingQuiz 백엔드로 발송 요청`
-4. 같은 화면의 foreground 수신 로그 확인
+1. Coding_Quiz에 로그인
+2. `FCM token 발급`
+3. `Token 등록`
+4. `CodingQuiz 백엔드로 발송 요청`
+5. 같은 화면의 foreground 수신 로그 확인
 
 실제 서비스에서는 token 발급을 로그인 완료 후 사용자가 알림 수신을 허용한 직후 수행하고, 이후에는 앱 시작 또는 알림 설정 화면에서 token 변경 여부를 확인하는 용도로 `getToken()`을 다시 호출합니다. 발급된 token은 frontend가 자기 backend로 전달하고, backend가 현재 로그인 user 기준으로 notification-be에 등록합니다.
 
-`user_id`, `template_code`, 등록된 device token이 notification-be DB에서 같은 사용자 기준으로 맞아야
+로그인 `username`, `template_code`, 등록된 device token이 notification-be DB에서 같은 사용자 기준으로 맞아야
 `target_count=1`, `success_count=1` 흐름이 됩니다.
 
 ---
