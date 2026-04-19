@@ -110,9 +110,7 @@ export default function FcmTestPage() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [serverConfig, setServerConfig] = useState(null);
-  const [userId, setUserId] = useState(
-    process.env.NEXT_PUBLIC_NOTIFICATION_TEST_USER_ID || "",
-  );
+  const [notificationUserId, setNotificationUserId] = useState("");
   const [templateCode, setTemplateCode] = useState(
     process.env.NEXT_PUBLIC_NOTIFICATION_TEST_TEMPLATE_CODE || "",
   );
@@ -138,7 +136,6 @@ export default function FcmTestPage() {
     getNotificationTestConfig().then((result) => {
       if (!result?.error) {
         setServerConfig(result);
-        setUserId((current) => current || result.default_user_id || "");
         setTemplateCode((current) => current || result.default_template_code || "");
       }
     });
@@ -235,6 +232,9 @@ export default function FcmTestPage() {
       return;
     }
 
+    if (result.notification_user_id) {
+      setNotificationUserId(result.notification_user_id);
+    }
     setStatus(`디바이스 등록 완료: ${formatValue(result.notification_response?.body?.code)}`);
   };
 
@@ -243,7 +243,6 @@ export default function FcmTestPage() {
     setStatus("");
     setIsSending(true);
     const result = await sendNotificationTest({
-      userId: userId.trim(),
       templateCode: templateCode.trim(),
     });
     setIsSending(false);
@@ -253,6 +252,9 @@ export default function FcmTestPage() {
       return;
     }
 
+    if (result.notification_user_id) {
+      setNotificationUserId(result.notification_user_id);
+    }
     const responseBody = result.notification_response?.body || {};
     setStatus(
       `발송 요청 완료: target ${formatValue(responseBody.target_count)}, success ${formatValue(
@@ -296,8 +298,6 @@ export default function FcmTestPage() {
             <dd>{serverConfig?.device_path || "-"}</dd>
             <dt>Send API</dt>
             <dd>{serverConfig?.send_user_path || "-"}</dd>
-            <dt>Access token</dt>
-            <dd>{serverConfig?.has_notification_access_token ? "설정됨" : "없음"}</dd>
           </dl>
           <button
             className={styles.secondaryButton}
@@ -310,15 +310,9 @@ export default function FcmTestPage() {
 
         <div className={styles.panel}>
           <h2 className={styles.panelTitle}>3. 발송 요청</h2>
-          <label className={styles.label}>
-            User ID
-            <input
-              className={styles.input}
-              value={userId}
-              onChange={(event) => setUserId(event.target.value)}
-              placeholder="notification-be UserId"
-            />
-          </label>
+          <p className={styles.panelText}>
+            User ID: {notificationUserId || "CodingQuiz 로그인 유저 기준 자동 적용"}
+          </p>
           <label className={styles.label}>
             Template code
             <input

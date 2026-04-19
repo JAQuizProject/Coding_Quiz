@@ -1,7 +1,10 @@
 import json
+from datetime import UTC, datetime, timedelta
 from socket import timeout as SocketTimeout
 from typing import Any
 from urllib import error, request
+
+import jwt
 
 from app.core.config import config
 from app.modules.notification_test.schemas import NotificationProxyResult
@@ -21,7 +24,6 @@ class NotificationProxyService:
         device_path: str,
         send_user_path: str,
         auth_token: str | None,
-        access_token: str | None,
         user_agent: str,
         timeout_seconds: int,
     ) -> None:
@@ -29,7 +31,6 @@ class NotificationProxyService:
         self.device_path = device_path if device_path.startswith("/") else f"/{device_path}"
         self.send_user_path = send_user_path if send_user_path.startswith("/") else f"/{send_user_path}"
         self.auth_token = auth_token
-        self.access_token = access_token
         self.user_agent = user_agent
         self.timeout_seconds = timeout_seconds
 
@@ -41,18 +42,20 @@ class NotificationProxyService:
     def send_user_url(self) -> str:
         return f"{self.base_url}{self.send_user_path}"
 
-    def register_device(self, registration_token: str) -> NotificationProxyResult:
-        if not self.access_token:
-            raise NotificationProxyError(
-                "TVCF_NOTIFICATION_ACCESS_TOKEN is required to register a device.",
-            )
+    def register_device(
+        self,
+        registration_token: str,
+        notification_user_id: str,
+        user_agent: str | None = None,
+    ) -> NotificationProxyResult:
+        access_token = self._build_access_token(notification_user_id)
 
         return self._post_json(
             url=self.device_url,
             body={"registration_token": registration_token},
             extra_headers={
-                "Cookie": f"access_token={self.access_token}",
-                "User-Agent": self.user_agent,
+                "Cookie": f"access_token={access_token}",
+                "User-Agent": user_agent or self.user_agent,
             },
         )
 
@@ -108,6 +111,13 @@ class NotificationProxyService:
                 f"notification-be request failed: {exc}",
             ) from exc
 
+    def _build_access_token(self, notification_user_id: str) -> str:
+        payload = {
+            "userId": notification_user_id,
+            "exp": datetime.now(UTC) + timedelta(minutes=10),
+        }
+        return jwt.encode(payload, config.SECRET_KEY, algorithm="HS256")
+
 
 def _parse_response_body(raw_body: str) -> dict[str, Any] | str | None:
     if not raw_body:
@@ -130,7 +140,6 @@ def get_notification_proxy_service() -> NotificationProxyService:
         device_path=config.TVCF_NOTIFICATION_DEVICE_PATH,
         send_user_path=config.TVCF_NOTIFICATION_SEND_USER_PATH,
         auth_token=config.TVCF_NOTIFICATION_AUTH_TOKEN,
-        access_token=config.TVCF_NOTIFICATION_ACCESS_TOKEN,
         user_agent=config.TVCF_NOTIFICATION_USER_AGENT,
         timeout_seconds=config.TVCF_NOTIFICATION_TIMEOUT_SECONDS,
     )

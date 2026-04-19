@@ -10,9 +10,7 @@ class NotificationTestConfigResponse(APIModel):
     notification_base_url: str
     device_path: str
     send_user_path: str
-    default_user_id: str | None
     default_template_code: str | None
-    has_notification_access_token: bool
 
 
 class RegisterDeviceTestRequest(APIModel):
@@ -20,7 +18,6 @@ class RegisterDeviceTestRequest(APIModel):
 
 
 class SendNotificationTestRequest(APIModel):
-    user_id: str | None = Field(default=None)
     template_code: str | None = Field(default=None)
 
 
@@ -34,6 +31,7 @@ class SendNotificationTestResponse(APIModel):
     target_url: str
     request_body: dict[str, str]
     notification_response: NotificationProxyResult
+    notification_user_id: str
 
 
 class RegisterDeviceTestResponse(APIModel):
@@ -41,3 +39,4 @@ class RegisterDeviceTestResponse(APIModel):
     target_url: str
     request_body: dict[str, str]
     notification_response: NotificationProxyResult
+    notification_user_id: str | None = None

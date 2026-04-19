@@ -1,10 +1,12 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 async function requestJson(path, options = {}) {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const response = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
   });
@@ -33,11 +35,10 @@ export function registerNotificationDevice(registrationToken) {
   });
 }
 
-export function sendNotificationTest({ userId, templateCode }) {
+export function sendNotificationTest({ templateCode }) {
   return requestJson("/fcm-test/send", {
     method: "POST",
     body: JSON.stringify({
-      user_id: userId || null,
       template_code: templateCode || null,
     }),
   });

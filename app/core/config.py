@@ -47,10 +47,8 @@ class Config(BaseModel):
     TVCF_NOTIFICATION_DEVICE_PATH: str = Field(default="/v1/devices")
     TVCF_NOTIFICATION_SEND_USER_PATH: str = Field(default="/v1/messages:sendUser")
     TVCF_NOTIFICATION_AUTH_TOKEN: str | None = Field(default=None)
-    TVCF_NOTIFICATION_ACCESS_TOKEN: str | None = Field(default=None)
     TVCF_NOTIFICATION_USER_AGENT: str = Field(default="CodingQuiz-FCM-Test/1.0")
     TVCF_NOTIFICATION_TIMEOUT_SECONDS: int = Field(default=10)
-    FCM_TEST_USER_ID: str | None = Field(default=None)
     FCM_TEST_TEMPLATE_CODE: str | None = Field(default=None)
 
 
@@ -87,10 +85,8 @@ def load_config() -> Config:
             "/v1/messages:sendUser",
         ),
         TVCF_NOTIFICATION_AUTH_TOKEN=os.getenv("TVCF_NOTIFICATION_AUTH_TOKEN"),
-        TVCF_NOTIFICATION_ACCESS_TOKEN=os.getenv("TVCF_NOTIFICATION_ACCESS_TOKEN"),
         TVCF_NOTIFICATION_USER_AGENT=os.getenv("TVCF_NOTIFICATION_USER_AGENT", "CodingQuiz-FCM-Test/1.0"),
         TVCF_NOTIFICATION_TIMEOUT_SECONDS=int(os.getenv("TVCF_NOTIFICATION_TIMEOUT_SECONDS", 10)),
-        FCM_TEST_USER_ID=os.getenv("FCM_TEST_USER_ID"),
         FCM_TEST_TEMPLATE_CODE=os.getenv("FCM_TEST_TEMPLATE_CODE"),
     )
 
