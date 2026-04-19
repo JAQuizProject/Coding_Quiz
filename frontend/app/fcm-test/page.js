@@ -59,6 +59,50 @@ function formatValue(value) {
   return JSON.stringify(value, null, 2);
 }
 
+function getErrorMessage(error) {
+  const message = error?.message || String(error);
+  return error?.code ? `${message} (${error.code})` : message;
+}
+
+async function getReadyMessagingRegistration(firebaseConfig) {
+  const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
+    scope: "/",
+  });
+  const readyRegistration = await navigator.serviceWorker.ready;
+  const messagingRegistration = readyRegistration || registration;
+  const activeWorker = messagingRegistration.active;
+
+  if (!activeWorker) {
+    throw new Error("FCM service worker가 아직 활성화되지 않았습니다. 페이지를 새로고침한 뒤 다시 시도하세요.");
+  }
+
+  await new Promise((resolve, reject) => {
+    const channel = new MessageChannel();
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error("FCM service worker 초기화 응답 시간이 초과되었습니다."));
+    }, 5000);
+
+    channel.port1.onmessage = (event) => {
+      window.clearTimeout(timeoutId);
+      if (event.data?.ok) {
+        resolve();
+        return;
+      }
+      reject(new Error(event.data?.error || "FCM service worker 초기화에 실패했습니다."));
+    };
+
+    activeWorker.postMessage(
+      {
+        type: "FIREBASE_MESSAGING_CONFIG",
+        firebaseConfig,
+      },
+      [channel.port2],
+    );
+  });
+
+  return messagingRegistration;
+}
+
 export default function FcmTestPage() {
   const [permission, setPermission] = useState("default");
   const [token, setToken] = useState("");
@@ -141,12 +185,7 @@ export default function FcmTestPage() {
 
       const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
       const messaging = getMessaging(app);
-      const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-      const readyRegistration = await navigator.serviceWorker.ready;
-      readyRegistration.active?.postMessage({
-        type: "FIREBASE_MESSAGING_CONFIG",
-        firebaseConfig,
-      });
+      const registration = await getReadyMessagingRegistration(firebaseConfig);
 
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
@@ -167,7 +206,7 @@ export default function FcmTestPage() {
       setToken(registrationToken);
       setStatus("FCM token 발급 완료. 이 페이지를 열어두면 foreground 메시지를 받을 수 있습니다.");
     } catch (nextError) {
-      setError(nextError.message || String(nextError));
+      setError(getErrorMessage(nextError));
     } finally {
       setIsIssuingToken(false);
     }
