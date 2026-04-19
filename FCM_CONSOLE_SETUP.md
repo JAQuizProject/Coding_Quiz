@@ -15,6 +15,15 @@ notification-be GOOGLE_CLOUD_PROJECT
 
 서로 다른 Firebase 프로젝트 값이 섞이면 token 발급은 되더라도 FCM 발송이 실패할 수 있다.
 
+값을 사용하는 위치:
+
+| 값 | 사용하는 곳 |
+| --- | --- |
+| Firebase Web app config | Coding_Quiz frontend |
+| VAPID public key | Coding_Quiz frontend `getToken()` |
+| service account JSON | notification-be Firebase Admin SDK |
+| GOOGLE_CLOUD_PROJECT | notification-be Firebase project 지정 |
+
 ## 1. Firebase 프로젝트 준비
 
 Firebase Console:
@@ -133,6 +142,8 @@ NEXT_PUBLIC_FIREBASE_VAPID_KEY=...
 NEXT_PUBLIC_NOTIFICATION_TEST_TEMPLATE_CODE=<notification-be template code>
 ```
 
+frontend env를 바꾼 뒤에는 `npm run dev`를 다시 시작한다.
+
 ## 6. notification-be env
 
 예:
@@ -143,6 +154,8 @@ GOOGLE_CLOUD_PROJECT=coding-quiz-fcm-test
 ```
 
 env 변경 후에는 notification-be를 재시작한다.
+
+notification-be와 frontend의 Firebase project id가 같은지 확인한다.
 
 ## 확인 기준
 

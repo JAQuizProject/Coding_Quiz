@@ -45,6 +45,22 @@ Coding_Quiz frontend
 | CodingQuiz 백엔드로 발송 요청 | 실제 서비스 이벤트 대신 발송 요청을 수동 실행 |
 | Foreground 수신 로그 | 브라우저가 FCM payload를 받은 결과 |
 
+버튼을 실제 서비스 시점으로 바꾸면 이렇게 볼 수 있다.
+
+```text
+FCM token 발급
+  -> 로그인 후 사용자가 알림 허용
+
+Token 등록
+  -> 이 브라우저 token을 현재 사용자에게 연결
+
+발송 요청
+  -> 댓글/메시지/상태 변경 같은 이벤트가 확정됨
+
+Foreground 수신 로그
+  -> 브라우저가 Firebase payload를 받음
+```
+
 ## 사용자 기준
 
 현재 테스트에서는 화면에서 User ID를 입력하지 않는다.
@@ -66,6 +82,14 @@ success_count = 1
 
 Foreground 수신 로그 표시
   브라우저가 payload를 실제로 받음
+```
+
+성공 화면을 설명할 때는 아래처럼 말하면 된다.
+
+```text
+target_count는 알림 서버가 DB에서 찾은 대상 token 수입니다.
+success_count는 Firebase가 발송 요청을 받아 성공 처리한 수입니다.
+foreground 로그는 브라우저가 payload를 실제로 받은 화면 증거입니다.
 ```
 
 ## 테스트 범위
@@ -101,4 +125,22 @@ notification-be는 DB에서 user/template/device token을 조회한 뒤 Firebase
 
 성공 기준은 target 1, success 1, failure 0이고,
 마지막으로 foreground 수신 로그에 title/body가 표시되는 것입니다.
+```
+
+## 한 장 요약
+
+```text
+목적:
+  서비스 backend -> notification-be -> Firebase FCM 연결 확인
+
+핵심 기준:
+  Coding_Quiz 로그인 username = notification-be User_TM.UserId
+
+성공 기준:
+  target 1 / success 1 / failure 0
+  foreground 로그 표시
+
+범위:
+  foreground 수신 테스트
+  background, 모바일 push, 운영 SSO는 제외
 ```

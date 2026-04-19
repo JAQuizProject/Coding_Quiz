@@ -42,6 +42,15 @@ User_TM.UserId = <Coding_Quiz 로그인 username>
 NotificationTemplate_TM.Code = <테스트 template_code>
 ```
 
+두 값은 같은 테스트 흐름 안에서 맞아야 한다.
+
+```text
+로그인 username
+  -> token 등록 대상 UserId
+  -> sendUser 발송 대상 user_id
+  -> NotificationDevice_TM.UserId
+```
+
 Coding_Quiz backend `.env`:
 
 ```env
@@ -129,6 +138,15 @@ failure_count = 0
 Foreground 수신 로그에 title/body 표시
 ```
 
+화면에서 확인할 값:
+
+| 영역 | 확인 내용 |
+| --- | --- |
+| 1. Token 발급 | 권한 상태가 `granted`이고 textarea에 FCM token 표시 |
+| 2. notification-be 연결 | Base URL, Device API, Send API가 로컬 notification-be 주소와 일치 |
+| 3. 발송 요청 | User ID가 로그인 username으로 표시되고 template code가 입력됨 |
+| 4. Foreground 수신 로그 | 발송 후 title/body payload가 표시됨 |
+
 ## 요청 흐름
 
 Token 등록:
@@ -144,6 +162,14 @@ backend
   -> POST /v1/devices
 ```
 
+notification-be로 전달되는 body:
+
+```json
+{
+  "registration_token": "<browser fcm token>"
+}
+```
+
 발송 요청:
 
 ```text
@@ -153,6 +179,28 @@ frontend
 backend
   -> POST /v1/messages:sendUser
   -> body: { user_id: username, template_code }
+```
+
+notification-be로 전달되는 body:
+
+```json
+{
+  "user_id": "<Coding_Quiz 로그인 username>",
+  "template_code": "<NotificationTemplate_TM.Code>"
+}
+```
+
+응답에서 보는 값:
+
+```text
+target_count:
+  notification-be가 찾은 발송 대상 token 수
+
+success_count:
+  Firebase가 성공 처리한 token 수
+
+failure_count:
+  Firebase 발송 실패 token 수
 ```
 
 ## 참고

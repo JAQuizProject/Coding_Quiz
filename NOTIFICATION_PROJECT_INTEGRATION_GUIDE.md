@@ -57,6 +57,9 @@ server-to-server 인증값
 Firebase service account
 ```
 
+즉 프론트는 "누구에게 보낼지"를 판단하지 않는다.
+프론트는 현재 브라우저가 받을 수 있는 token만 backend로 넘긴다.
+
 ## Backend 역할
 
 서비스 backend는 현재 사용자와 알림 이벤트를 확정한다.
@@ -68,6 +71,15 @@ frontend가 준 registration_token을 notification-be에 등록
 template_code 결정
 notification-be /v1/messages:sendUser 호출
 ```
+
+backend가 확정하는 값:
+
+| 값 | 의미 |
+| --- | --- |
+| 현재 UserId | token 등록 대상 또는 발송 대상 |
+| registration_token | frontend가 넘긴 브라우저 token |
+| template_code | 어떤 문구로 보낼지 정하는 코드 |
+| 발송 시점 | 서비스 DB 작업이 성공한 뒤 |
 
 token 등록 개념:
 
@@ -124,6 +136,15 @@ Coding_Quiz backend
 서비스 backend
   -> SSO/session으로 현재 User_TM.UserId 확정
   -> 실제 업무 이벤트 이후 notification-be에 발송 요청
+```
+
+예시:
+
+```text
+댓글 저장 성공
+  -> 댓글 대상 사용자 UserId 결정
+  -> 댓글 알림 template_code 선택
+  -> notification-be /v1/messages:sendUser 호출
 ```
 
 ## 구현 체크리스트
