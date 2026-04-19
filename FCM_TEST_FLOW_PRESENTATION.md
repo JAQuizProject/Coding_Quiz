@@ -137,7 +137,9 @@ notification-be는 token 저장과 실제 FCM 발송을 담당한다.
 
 ```text
 브라우저
-  -> 알림 권한 확인
+  -> 로그인 완료 상태 확인
+  -> 사용자의 알림 설정 ON 여부 확인
+  -> 알림 권한 요청 또는 확인
   -> Firebase Web SDK 초기화
   -> getToken() 호출
   -> FCM registration token 발급
@@ -145,11 +147,22 @@ notification-be는 token 저장과 실제 FCM 발송을 담당한다.
 
 ### 실제 서비스에서는 언제 하는가
 
+최초 발급 시점:
+
 ```text
-사용자가 로그인했을 때
-사용자가 알림 설정을 켰을 때
-사용자가 "알림 받기" 버튼을 눌렀을 때
-브라우저 token이 바뀐 것을 감지했을 때
+로그인 완료
+  -> 사용자가 알림 설정을 ON
+  -> 브라우저 알림 권한 granted
+  -> 그 직후 getToken()
+```
+
+이후 확인/갱신 시점:
+
+```text
+로그인 완료 후 앱 시작 시
+알림 설정 화면 진입 시
+사용자 알림 설정이 ON이고 Notification.permission이 granted일 때
+token 변경 여부 확인이 필요할 때
 ```
 
 ### 이 단계가 성공했다는 의미
@@ -167,6 +180,13 @@ VAPID key가 맞음
 
 ```text
 token 발급 = 알림 받을 주소를 만드는 단계
+```
+
+백엔드가 이 token을 직접 발급할 수는 없다.
+
+```text
+백엔드는 "token 등록이 필요하다"는 신호를 줄 수 있음
+실제 getToken()은 브라우저/앱에서만 가능
 ```
 
 ## 7. 2단계: Token 등록
@@ -199,7 +219,8 @@ Content-Type: application/json
 ### 실제 서비스에서는 언제 하는가
 
 ```text
-FCM token을 발급받은 직후
+getToken()으로 token을 받은 직후
+이전에 같은 user/env/token으로 등록 성공한 기록이 없을 때
 로그인한 사용자의 token이 서버에 없을 때
 브라우저/기기/token이 바뀌었을 때
 사용자가 알림 권한을 다시 허용했을 때
@@ -221,6 +242,18 @@ token 등록 = user_id와 FCM token을 notification-be DB에 연결하는 단계
 ```
 
 또 현재 테스트에서는 등록 대상 유저가 화면의 User ID input이 아니라 `TVCF_NOTIFICATION_ACCESS_TOKEN` 안의 `userId`로 결정된다.
+
+프론트에서 중복 등록 요청을 줄일 수는 있지만 완전히 막을 수는 없다. 그래서 서버 등록 API는 같은 token이 다시 들어와도 안전해야 한다.
+
+```text
+현재 로컬 테스트:
+  같은 token이면 Device already exists가 나올 수 있음
+  이미 등록된 상태로 보고 발송 단계로 진행 가능
+
+운영 권장:
+  같은 token 재등록은 성공으로 처리하거나 기존 device를 반환
+  같은 user/device/browser이면 token을 최신 값으로 갱신
+```
 
 ## 8. 3단계: CodingQuiz 백엔드로 발송 요청
 
@@ -374,8 +407,9 @@ background 알림창 표시는 현재 테스트 범위에서 제외한다.
 
 | 테스트 화면 버튼 | 실제 서비스에서 대응되는 시점 |
 | --- | --- |
-| FCM token 발급 | 사용자가 알림 수신을 허용하거나 앱이 token을 준비하는 시점 |
-| Token 등록 | token을 로그인 사용자와 연결해 서버에 저장하는 시점 |
+| FCM token 발급 | 로그인 완료 후 사용자가 알림 ON을 하고 권한이 granted된 직후 |
+| FCM token 확인/갱신 | 로그인 완료 후 앱 시작 시 또는 알림 설정 화면 진입 시 |
+| Token 등록 | getToken() 직후, 이전 등록 token과 다르거나 등록 기록이 없을 때 |
 | CodingQuiz 백엔드로 발송 요청 | 댓글/메시지/입찰/퀴즈 결과 같은 이벤트가 DB에 확정된 시점 |
 | Foreground 수신 로그 | Firebase가 브라우저에 메시지를 전달한 시점 |
 
@@ -441,8 +475,9 @@ notification-be는 token 저장과 Firebase 발송을 담당합니다.
 ### 13.3 화면 버튼을 실제 서비스 시점에 연결한다
 
 ```text
-FCM token 발급은 사용자가 알림을 받을 준비를 하는 단계입니다.
-Token 등록은 이 브라우저 token을 서버에 저장하는 단계입니다.
+FCM token 발급은 로그인 후 사용자가 알림을 허용했을 때 브라우저가 알림 받을 주소를 만드는 단계입니다.
+이후 앱 시작이나 알림 설정 화면에서는 같은 getToken()을 token 확인/갱신 용도로 사용합니다.
+Token 등록은 이 브라우저 token을 현재 로그인 사용자와 연결해 서버에 저장하는 단계입니다.
 발송 요청은 실제 서비스 이벤트가 발생한 상황을 버튼으로 대신한 것입니다.
 Foreground 로그는 브라우저가 실제로 메시지를 받았다는 증거입니다.
 ```
@@ -475,7 +510,11 @@ notification-be는 자기 DB에서 user, template, device token을 조회한 뒤
 Firebase Admin SDK를 이용해서 실제 FCM을 보냅니다.
 
 첫 번째 버튼은 브라우저가 알림 받을 주소인 FCM token을 만드는 단계입니다.
-두 번째 버튼은 그 token을 notification-be의 디바이스 테이블에 저장하는 단계입니다.
+실제 서비스에서는 로그인 완료 후 사용자가 알림을 켜고 권한을 허용한 직후 최초로 실행합니다.
+이후에는 앱 시작이나 알림 설정 화면에서 token이 바뀌었는지 확인하는 용도로 실행합니다.
+
+두 번째 버튼은 그 token을 현재 로그인 사용자와 연결해 notification-be의 디바이스 테이블에 저장하는 단계입니다.
+중복 등록 요청은 프론트에서 줄이되, 서버는 같은 token이 다시 와도 안전하게 처리해야 합니다.
 세 번째 버튼은 실제 서비스 이벤트가 발생했다고 가정하고 발송 요청을 보내는 단계입니다.
 마지막 수신 로그는 Firebase가 브라우저에 payload를 실제로 전달했다는 증거입니다.
 

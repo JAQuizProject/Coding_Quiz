@@ -307,8 +307,10 @@ frontend가 하는 일:
 
 ```text
 Firebase Web SDK 초기화
-브라우저 알림 권한 요청
-FCM registration token 발급
+로그인 완료 후 사용자의 알림 설정 ON 여부 확인
+사용자 동의 UI 이후 브라우저 알림 권한 요청
+권한 granted 직후 FCM registration token 최초 발급
+앱 시작 또는 알림 설정 화면에서 token 확인/갱신
 발급 token을 자기 서비스 backend로 전달
 foreground onMessage() 수신 처리
 ```

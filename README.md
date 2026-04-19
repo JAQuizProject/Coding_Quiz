@@ -229,6 +229,8 @@ npm run dev
 3. `CodingQuiz 백엔드로 발송 요청`
 4. 같은 화면의 foreground 수신 로그 확인
 
+실제 서비스에서는 token 발급을 로그인 완료 후 사용자가 알림 수신을 허용한 직후 수행하고, 이후에는 앱 시작 또는 알림 설정 화면에서 token 변경 여부를 확인하는 용도로 `getToken()`을 다시 호출합니다. 발급된 token은 frontend가 자기 backend로 전달하고, backend가 현재 로그인 user 기준으로 notification-be에 등록합니다.
+
 `user_id`, `template_code`, 등록된 device token이 notification-be DB에서 같은 사용자 기준으로 맞아야
 `target_count=1`, `success_count=1` 흐름이 됩니다.
 

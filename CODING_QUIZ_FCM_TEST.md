@@ -339,11 +339,12 @@ FCM token 발급
 실제 동작:
 
 ```text
-1. 브라우저 Notification 권한 요청
-2. Firebase Web SDK 초기화
-3. FCM token 발급용 registration 준비
-4. getToken()으로 브라우저 FCM registration token 발급
-5. onMessage()로 foreground 메시지 수신 대기
+1. 로그인 완료 상태에서 알림 설정 ON 여부 확인
+2. 브라우저 Notification 권한 요청 또는 확인
+3. 권한이 granted면 Firebase Web SDK 초기화
+4. FCM token 발급용 registration 준비
+5. getToken()으로 브라우저 FCM registration token 발급
+6. onMessage()로 foreground 메시지 수신 대기
 ```
 
 결과:
@@ -353,6 +354,37 @@ FCM token 발급
 ```
 
 이 단계에서는 DB 저장이 없다.
+
+실제 서비스의 최초 발급 시점은 아래처럼 잡는다.
+
+```text
+로그인 완료
+  -> 사용자가 알림 받기 ON
+  -> 브라우저 권한 granted
+  -> 그 직후 getToken()
+```
+
+이후에는 새로 발급한다기보다 확인/갱신에 가깝다.
+
+```text
+로그인 완료 후 앱 시작 시
+또는 알림 설정 화면 진입 시
+알림 설정이 ON이고 Notification.permission이 granted이면 getToken()
+이전에 등록한 token과 다르면 backend에 갱신 등록
+```
+
+백엔드는 이 token을 직접 발급할 수 없다.
+
+```text
+백엔드가 할 수 있는 것:
+  token 등록이 필요하다는 상태를 frontend에 알려줌
+  frontend가 보내준 token을 현재 로그인 user와 연결해 notification-be에 등록
+
+백엔드가 할 수 없는 것:
+  브라우저 알림 권한을 대신 허용
+  브라우저 PushSubscription을 대신 생성
+  FCM registration token을 직접 발급
+```
 
 ### 8.2 Token 등록
 
@@ -383,6 +415,22 @@ tvcf-notification-be
 ```text
 Token 등록은 화면의 User ID input을 사용하지 않는다.
 등록 유저는 TVCF_NOTIFICATION_ACCESS_TOKEN 안의 userId로 결정된다.
+```
+
+등록 시점:
+
+```text
+getToken()으로 token을 받은 직후
+이전에 같은 user/env/token으로 등록 성공한 기록이 없을 때
+또는 기존 등록 token과 현재 token이 다를 때
+```
+
+중복 등록:
+
+```text
+현재 notification-be는 같은 token을 다시 등록하면 Device already exists를 반환할 수 있다.
+로컬 테스트에서는 이미 등록된 상태로 보고 발송 단계로 넘어가면 된다.
+운영에서는 같은 token 재등록이 실패로 보이지 않도록 idempotent하게 처리하는 것이 좋다.
 ```
 
 ### 8.3 CodingQuiz 백엔드로 발송 요청
@@ -465,6 +513,7 @@ Test message from notification-be.
 
 ```text
 사용자 클릭: FCM token 발급
+  -> 로그인 완료 + 알림 ON + 권한 granted 상태에서 실행
   -> 브라우저가 Firebase에 "이 브라우저로 알림 받을 수 있게 token을 달라"고 요청
   -> 결과로 FCM registration token 생성
 ```
@@ -475,6 +524,16 @@ Test message from notification-be.
   -> Coding_Quiz backend가 notification-be /v1/devices 호출
   -> notification-be가 access_token cookie에서 userId 확인
   -> notification-be가 NotificationDevice_TM에 token 저장
+```
+
+실제 서비스에서는 이 두 버튼이 보통 아래 자동 흐름으로 바뀐다.
+
+```text
+로그인 완료
+  -> 내 알림 설정 조회
+  -> 알림 설정이 ON이고 권한이 granted면 getToken()
+  -> 이전 등록 token과 다르면 backend에 registration_token 전달
+  -> backend가 notification-be에 등록
 ```
 
 ```text
@@ -673,6 +732,14 @@ access_token 안의 userId를 tvcf_dev.User_TM에서 찾지 못했다.
 테스트 관점에서는 치명적 실패가 아니다.
 
 이미 등록된 상태라면 바로 발송 요청으로 넘어간다.
+
+운영 관점:
+
+```text
+프론트는 이전에 같은 user/env/token으로 등록 성공한 기록이 있으면 등록 요청을 줄일 수 있다.
+하지만 브라우저 재설치, localStorage 삭제, 다중 탭, 재시도 때문에 중복 요청은 항상 발생할 수 있다.
+따라서 notification-be 또는 각 서비스 backend는 중복 등록에 안전해야 한다.
+```
 
 ### 12.3 target_count가 0
 

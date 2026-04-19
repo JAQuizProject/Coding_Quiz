@@ -209,6 +209,16 @@ Firebase Web SDK에서 FCM registration token을 발급
 현재 foreground 테스트에서는 onMessage() 수신 확인
 ```
 
+token 발급은 로그인 전이 아니라 로그인 완료 후에 수행한다. token은 브라우저 주소일 뿐이고, 서버에 저장하려면 어느 `User_TM.UserId`의 token인지 확정되어 있어야 한다.
+
+```text
+token만 있음
+  -> 어느 사용자의 token인지 모름
+
+로그인 사용자 + token
+  -> User_TM.UserId와 token을 연결해 저장 가능
+```
+
 ### 4.3 알림 권한 요청
 
 브라우저에서 알림 권한을 요청한다.
@@ -225,6 +235,17 @@ Firebase Web SDK에서 FCM registration token을 발급
 
 ```text
 Notification.permission === "granted"
+```
+
+권장 최초 흐름:
+
+```text
+로그인 완료
+  -> 알림 설정 ON 또는 알림 받기 버튼 클릭
+  -> Notification.requestPermission()
+  -> granted
+  -> getToken()
+  -> backend에 token 등록 요청
 ```
 
 ### 4.4 FCM token 발급
@@ -246,6 +267,34 @@ registration_token
 ```
 
 이 token은 "이 브라우저 인스턴스에 FCM을 보내기 위한 주소"다.
+
+시점은 둘로 나눈다.
+
+```text
+최초 발급:
+  로그인 완료 후 사용자가 알림 받기 ON
+  브라우저 권한 granted
+  그 직후 getToken()
+
+이후 확인/갱신:
+  로그인 완료 후 앱 시작 시
+  또는 알림 설정 화면 진입 시
+  알림 설정이 ON이고 Notification.permission이 granted면 getToken()
+  이전 등록 token과 다르면 backend에 갱신 등록
+```
+
+백엔드는 token 발급을 대신할 수 없다.
+
+```text
+백엔드 가능:
+  로그인 응답 또는 설정 조회 응답으로 token 등록 필요 상태를 알려줌
+  frontend가 보낸 registration_token을 현재 User_TM.UserId와 연결
+
+백엔드 불가:
+  브라우저 알림 권한 허용
+  브라우저 PushSubscription 생성
+  FCM registration token 직접 발급
+```
 
 ### 4.5 자기 backend에 token 등록 요청
 
@@ -278,6 +327,14 @@ Firebase service account JSON
 다른 사용자의 user_id
 ```
 
+등록 요청 시점:
+
+```text
+getToken()으로 token을 받은 직후
+이전에 같은 user/env/token으로 등록 성공한 기록이 없을 때
+기존 등록 token과 현재 token이 다를 때
+```
+
 ### 4.6 foreground 수신 처리
 
 현재 회사 연동 문서에서 다루는 수신 방식은 foreground다.
@@ -301,7 +358,7 @@ Firebase 설정 변경
 브라우저/기기 변경
 ```
 
-프론트는 앱 시작 또는 알림 설정 화면 진입 시 token을 다시 가져오고, 기존 등록과 달라지면 backend에 재등록해야 한다.
+프론트는 로그인 완료 후 앱 시작 또는 알림 설정 화면 진입 시 token을 다시 가져오고, 기존 등록과 달라지면 backend에 재등록해야 한다. 단, 프론트의 이전 등록 기록은 최적화일 뿐이다. 서버는 중복 등록 요청이 들어와도 안전해야 한다.
 
 ## 5. Backend가 해야 할 일
 
@@ -322,7 +379,15 @@ frontend -> service backend
 
 service backend
   SSO 세션/토큰으로 현재 User_TM.UserId 확인
-  notification-be /v1/devices 호출
+notification-be /v1/devices 호출
+```
+
+중요:
+
+```text
+프론트는 registration_token만 보낸다.
+user_id는 backend가 SSO/session/JWT로 확정한다.
+프론트가 보낸 user_id를 그대로 믿고 token을 등록하면 안 된다.
 ```
 
 현재 notification-be의 `/v1/devices`는 `access_token` cookie에서 userId를 읽는다.
@@ -572,6 +637,7 @@ notification-be /v1/devices 호출 구현
 notification-be /v1/messages:sendUser 또는 sendDefinition 호출 구현
 notification-be 실패 시 로깅/재시도 정책 정의
 중복 발송 방지 키 정의
+token 등록 API idempotency 정책 정의
 SSO token 전달 또는 운영 server-to-server 인증 방식 결정
 ```
 
