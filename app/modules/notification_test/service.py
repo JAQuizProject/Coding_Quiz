@@ -23,6 +23,7 @@ class NotificationProxyService:
         base_url: str,
         device_path: str,
         send_user_path: str,
+        send_definition_path: str,
         auth_token: str | None,
         user_agent: str,
         timeout_seconds: int,
@@ -30,6 +31,9 @@ class NotificationProxyService:
         self.base_url = base_url.rstrip("/")
         self.device_path = device_path if device_path.startswith("/") else f"/{device_path}"
         self.send_user_path = send_user_path if send_user_path.startswith("/") else f"/{send_user_path}"
+        self.send_definition_path = (
+            send_definition_path if send_definition_path.startswith("/") else f"/{send_definition_path}"
+        )
         self.auth_token = auth_token
         self.user_agent = user_agent
         self.timeout_seconds = timeout_seconds
@@ -41,6 +45,10 @@ class NotificationProxyService:
     @property
     def send_user_url(self) -> str:
         return f"{self.base_url}{self.send_user_path}"
+
+    @property
+    def send_definition_url(self) -> str:
+        return f"{self.base_url}{self.send_definition_path}"
 
     def register_device(
         self,
@@ -64,6 +72,16 @@ class NotificationProxyService:
             url=self.send_user_url,
             body={
                 "user_id": user_id,
+                "template_code": template_code,
+            },
+            extra_headers=None,
+        )
+
+    def send_definition_message(self, definition_code: str, template_code: str) -> NotificationProxyResult:
+        return self._post_json(
+            url=self.send_definition_url,
+            body={
+                "definition_code": definition_code,
                 "template_code": template_code,
             },
             extra_headers=None,
@@ -139,6 +157,7 @@ def get_notification_proxy_service() -> NotificationProxyService:
         base_url=config.TVCF_NOTIFICATION_BASE_URL,
         device_path=config.TVCF_NOTIFICATION_DEVICE_PATH,
         send_user_path=config.TVCF_NOTIFICATION_SEND_USER_PATH,
+        send_definition_path=config.TVCF_NOTIFICATION_SEND_DEFINITION_PATH,
         auth_token=config.TVCF_NOTIFICATION_AUTH_TOKEN,
         user_agent=config.TVCF_NOTIFICATION_USER_AGENT,
         timeout_seconds=config.TVCF_NOTIFICATION_TIMEOUT_SECONDS,

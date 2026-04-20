@@ -17,10 +17,12 @@ CONFIG_FIELDS = (
     "TVCF_NOTIFICATION_BASE_URL",
     "TVCF_NOTIFICATION_DEVICE_PATH",
     "TVCF_NOTIFICATION_SEND_USER_PATH",
+    "TVCF_NOTIFICATION_SEND_DEFINITION_PATH",
     "TVCF_NOTIFICATION_AUTH_TOKEN",
     "TVCF_NOTIFICATION_USER_AGENT",
     "TVCF_NOTIFICATION_TIMEOUT_SECONDS",
     "FCM_TEST_TEMPLATE_CODE",
+    "FCM_TEST_DEFINITION_CODE",
 )
 
 
@@ -67,7 +69,9 @@ def test_get_fcm_test_config(client):
     config.TVCF_NOTIFICATION_BASE_URL = "http://notification.test"
     config.TVCF_NOTIFICATION_DEVICE_PATH = "/v1/devices"
     config.TVCF_NOTIFICATION_SEND_USER_PATH = "/v1/messages:sendUser"
+    config.TVCF_NOTIFICATION_SEND_DEFINITION_PATH = "/v1/messages:sendDefinition"
     config.FCM_TEST_TEMPLATE_CODE = "TPL-1"
+    config.FCM_TEST_DEFINITION_CODE = "DEF-1"
 
     response = client.get("/fcm-test/config")
 
@@ -77,7 +81,9 @@ def test_get_fcm_test_config(client):
         "notification_base_url": "http://notification.test",
         "device_path": "/v1/devices",
         "send_user_path": "/v1/messages:sendUser",
+        "send_definition_path": "/v1/messages:sendDefinition",
         "default_template_code": "TPL-1",
+        "default_definition_code": "DEF-1",
     }
 
 
@@ -221,6 +227,100 @@ def test_send_requires_template_code(client):
 
     assert response.status_code == 400
     assert "template_code" in response.json()["detail"]
+
+
+def test_send_definition_posts_definition_and_template_code_to_notification_be(client, monkeypatch):
+    captured = {}
+    config.FCM_TEST_PROXY_ENABLED = True
+    config.TVCF_NOTIFICATION_BASE_URL = "http://notification.test"
+    config.TVCF_NOTIFICATION_SEND_DEFINITION_PATH = "/v1/messages:sendDefinition"
+    override_current_user("quizuser")
+
+    def fake_urlopen(outbound_request, timeout):
+        captured["url"] = outbound_request.full_url
+        captured["body"] = json.loads(outbound_request.data.decode("utf-8"))
+        captured["headers"] = _headers(outbound_request)
+        return FakeResponse(
+            200,
+            {
+                "message_type": "definition",
+                "target_count": 1,
+                "success_count": 1,
+                "failure_count": 0,
+            },
+        )
+
+    monkeypatch.setattr(notification_service.request, "urlopen", fake_urlopen)
+
+    response = client.post(
+        "/fcm-test/send-definition",
+        json={"definition_code": "DEF-1", "template_code": "TPL-1"},
+    )
+
+    assert response.status_code == 200
+    assert captured["url"] == "http://notification.test/v1/messages:sendDefinition"
+    assert captured["body"] == {"definition_code": "DEF-1", "template_code": "TPL-1"}
+    assert captured["headers"]["content-type"] == "application/json"
+    assert response.json()["notification_user_id"] == "quizuser"
+    assert response.json()["notification_response"]["body"] == {
+        "message_type": "definition",
+        "target_count": 1,
+        "success_count": 1,
+        "failure_count": 0,
+    }
+
+
+def test_send_definition_uses_default_codes(client, monkeypatch):
+    captured = {}
+    config.FCM_TEST_PROXY_ENABLED = True
+    config.TVCF_NOTIFICATION_BASE_URL = "http://notification.test"
+    config.TVCF_NOTIFICATION_SEND_DEFINITION_PATH = "/v1/messages:sendDefinition"
+    config.FCM_TEST_DEFINITION_CODE = "DEF-ENV"
+    config.FCM_TEST_TEMPLATE_CODE = "TPL-ENV"
+    override_current_user("quizuser")
+
+    def fake_urlopen(outbound_request, timeout):
+        captured["body"] = json.loads(outbound_request.data.decode("utf-8"))
+        return FakeResponse(
+            200,
+            {
+                "message_type": "definition",
+                "target_count": 1,
+                "success_count": 1,
+                "failure_count": 0,
+            },
+        )
+
+    monkeypatch.setattr(notification_service.request, "urlopen", fake_urlopen)
+
+    response = client.post("/fcm-test/send-definition", json={})
+
+    assert response.status_code == 200
+    assert captured["body"] == {"definition_code": "DEF-ENV", "template_code": "TPL-ENV"}
+
+
+def test_send_definition_requires_login(client):
+    config.FCM_TEST_PROXY_ENABLED = True
+
+    response = client.post(
+        "/fcm-test/send-definition",
+        json={"definition_code": "DEF-1", "template_code": "TPL-1"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "FCM 테스트는 Coding_Quiz 로그인이 필요합니다."
+
+
+def test_send_definition_requires_definition_code(client):
+    config.FCM_TEST_PROXY_ENABLED = True
+    config.FCM_TEST_DEFINITION_CODE = None
+    config.FCM_TEST_TEMPLATE_CODE = "TPL-1"
+    override_current_user("quizuser")
+
+    response = client.post("/fcm-test/send-definition", json={})
+
+    assert response.status_code == 400
+    assert "definition_code" in response.json()["detail"]
 
 
 def test_notification_be_error_is_wrapped_as_502(client, monkeypatch):

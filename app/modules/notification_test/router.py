@@ -10,6 +10,7 @@ from app.modules.notification_test.schemas import (
     NotificationTestConfigResponse,
     RegisterDeviceTestRequest,
     RegisterDeviceTestResponse,
+    SendDefinitionNotificationTestRequest,
     SendNotificationTestRequest,
     SendNotificationTestResponse,
 )
@@ -66,7 +67,9 @@ def get_notification_test_config() -> NotificationTestConfigResponse:
         notification_base_url=config.TVCF_NOTIFICATION_BASE_URL,
         device_path=config.TVCF_NOTIFICATION_DEVICE_PATH,
         send_user_path=config.TVCF_NOTIFICATION_SEND_USER_PATH,
+        send_definition_path=config.TVCF_NOTIFICATION_SEND_DEFINITION_PATH,
         default_template_code=config.FCM_TEST_TEMPLATE_CODE,
+        default_definition_code=config.FCM_TEST_DEFINITION_CODE,
     )
 
 
@@ -158,4 +161,59 @@ def send_test_notification(
         request_body=request_body,
         notification_response=notification_response,
         notification_user_id=user_id,
+    )
+
+
+@router.post("/send-definition", response_model=SendNotificationTestResponse)
+def send_test_definition_notification(
+    payload: SendDefinitionNotificationTestRequest,
+    current_user: User | None = Depends(get_optional_current_user),
+    notification_proxy_service: NotificationProxyService = Depends(get_notification_proxy_service),
+) -> SendNotificationTestResponse:
+    if not config.FCM_TEST_PROXY_ENABLED:
+        raise HTTPException(status_code=404, detail="FCM test proxy is disabled.")
+
+    current_user = require_current_user(current_user)
+    notification_user_id = map_notification_user_id(current_user)
+    definition_code = payload.definition_code or config.FCM_TEST_DEFINITION_CODE
+    template_code = payload.template_code or config.FCM_TEST_TEMPLATE_CODE
+    if not definition_code:
+        raise HTTPException(
+            status_code=400,
+            detail="definition_code가 필요합니다. 요청 body나 .env의 FCM_TEST_DEFINITION_CODE로 설정하세요.",
+        )
+    if not template_code:
+        raise HTTPException(
+            status_code=400,
+            detail="template_code가 필요합니다. 요청 body나 .env의 FCM_TEST_TEMPLATE_CODE로 설정하세요.",
+        )
+
+    request_body = {
+        "definition_code": definition_code,
+        "template_code": template_code,
+    }
+
+    try:
+        notification_response = notification_proxy_service.send_definition_message(
+            definition_code=definition_code,
+            template_code=template_code,
+        )
+    except NotificationProxyError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": str(exc),
+                "target_url": notification_proxy_service.send_definition_url,
+                "notification_status_code": exc.status_code,
+                "notification_body": exc.body,
+                "request_body": request_body,
+            },
+        ) from exc
+
+    return SendNotificationTestResponse(
+        message="notification-be 구독 기반 발송 요청을 완료했습니다.",
+        target_url=notification_proxy_service.send_definition_url,
+        request_body=request_body,
+        notification_response=notification_response,
+        notification_user_id=notification_user_id,
     )
