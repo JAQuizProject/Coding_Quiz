@@ -25,10 +25,12 @@ FCM_TEST_PROXY_ENABLED
 TVCF_NOTIFICATION_BASE_URL
 TVCF_NOTIFICATION_DEVICE_PATH
 TVCF_NOTIFICATION_SEND_USER_PATH
+TVCF_NOTIFICATION_SEND_DEFINITION_PATH
 TVCF_NOTIFICATION_AUTH_TOKEN
 TVCF_NOTIFICATION_USER_AGENT
 TVCF_NOTIFICATION_TIMEOUT_SECONDS
 FCM_TEST_TEMPLATE_CODE
+FCM_TEST_DEFINITION_CODE
 ```
 
 `FCM_TEST_PROXY_ENABLED`는 운영 환경에서 기본적으로 꺼지도록 구성되어 있습니다.
@@ -53,6 +55,7 @@ FCM_TEST_TEMPLATE_CODE
 GET  /fcm-test/config
 POST /fcm-test/register-device
 POST /fcm-test/send
+POST /fcm-test/send-definition
 ```
 
 역할:
@@ -61,6 +64,7 @@ POST /fcm-test/send
 - 로그인한 사용자의 `username`을 notification-be의 `UserId`로 사용합니다.
 - token 등록 요청을 notification-be `/v1/devices`로 전달합니다.
 - 발송 요청을 notification-be `/v1/messages:sendUser`로 전달합니다.
+- 구독 기반 발송 요청을 notification-be `/v1/messages:sendDefinition`으로 전달합니다.
 
 현재 기준:
 
@@ -100,6 +104,17 @@ POST {TVCF_NOTIFICATION_BASE_URL}/v1/messages:sendUser
 }
 ```
 
+구독 기반 발송 요청:
+
+```text
+POST {TVCF_NOTIFICATION_BASE_URL}/v1/messages:sendDefinition
+
+{
+  "definition_code": "<NotificationDefinition code>",
+  "template_code": "<NotificationTemplate code>"
+}
+```
+
 ### `app/modules/notification_test/schemas.py`
 
 `/fcm-test` API의 요청/응답 모델을 정의합니다.
@@ -109,6 +124,7 @@ POST {TVCF_NOTIFICATION_BASE_URL}/v1/messages:sendUser
 - 설정 응답
 - token 등록 요청/응답
 - 발송 요청/응답
+- 구독 기반 발송 요청/응답
 - notification-be 응답 래퍼
 
 ## 프론트엔드 코드
@@ -122,6 +138,7 @@ POST {TVCF_NOTIFICATION_BASE_URL}/v1/messages:sendUser
 - `GET /fcm-test/config`
 - `POST /fcm-test/register-device`
 - `POST /fcm-test/send`
+- `POST /fcm-test/send-definition`
 - `localStorage`의 로그인 토큰을 `Authorization: Bearer ...` 헤더로 전달
 
 즉 프론트는 notification-be를 직접 호출하지 않고, 항상 Coding_Quiz 백엔드를 거칩니다.
@@ -136,7 +153,7 @@ POST {TVCF_NOTIFICATION_BASE_URL}/v1/messages:sendUser
 2. 브라우저 알림 권한 요청
 3. Firebase `getToken()`으로 FCM registration token 발급
 4. 발급된 token을 Coding_Quiz 백엔드에 등록 요청
-5. Coding_Quiz 백엔드에 발송 요청
+5. Coding_Quiz 백엔드에 유저 직접 발송 또는 구독 기반 발송 요청
 6. foreground `onMessage`로 수신 payload 표시
 
 이 화면은 로그인 후 사용하는 것을 기준으로 합니다.
@@ -149,8 +166,9 @@ POST {TVCF_NOTIFICATION_BASE_URL}/v1/messages:sendUser
 주요 영역:
 
 - token 발급
-- notification-be 연결 정보
-- 발송 요청
+- token 등록과 notification-be 연결 정보
+- 유저 직접 발송
+- 구독 기반 발송
 - foreground 수신 로그
 
 ### `frontend/public/firebase-messaging-sw.js`
@@ -186,7 +204,9 @@ Coding_Quiz 백엔드가 notification-be 규칙에 맞게 요청을 만드는지
 - token 등록 요청이 `/v1/devices`로 전달되는지
 - 등록 요청에 access token cookie가 들어가는지
 - 발송 요청이 `/v1/messages:sendUser`로 전달되는지
+- 구독 기반 발송 요청이 `/v1/messages:sendDefinition`으로 전달되는지
 - template code가 body 또는 환경변수에서 적용되는지
+- definition code가 body 또는 환경변수에서 적용되는지
 - notification-be 오류가 502 응답으로 감싸지는지
 - 프록시 비활성화 시 테스트 API가 막히는지
 
@@ -205,9 +225,11 @@ FCM_TEST_PROXY_ENABLED
 TVCF_NOTIFICATION_BASE_URL
 TVCF_NOTIFICATION_DEVICE_PATH
 TVCF_NOTIFICATION_SEND_USER_PATH
+TVCF_NOTIFICATION_SEND_DEFINITION_PATH
 TVCF_NOTIFICATION_USER_AGENT
 TVCF_NOTIFICATION_TIMEOUT_SECONDS
 FCM_TEST_TEMPLATE_CODE
+FCM_TEST_DEFINITION_CODE
 ```
 
 ### `frontend/.env.example`
@@ -226,6 +248,7 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 NEXT_PUBLIC_FIREBASE_APP_ID
 NEXT_PUBLIC_FIREBASE_VAPID_KEY
 NEXT_PUBLIC_NOTIFICATION_TEST_TEMPLATE_CODE
+NEXT_PUBLIC_NOTIFICATION_TEST_DEFINITION_CODE
 ```
 
 ## 전체 동작 순서
@@ -237,10 +260,11 @@ NEXT_PUBLIC_NOTIFICATION_TEST_TEMPLATE_CODE
 5. 브라우저가 알림 권한을 허용하면 Firebase `getToken()`으로 token을 받습니다.
 6. 사용자가 `Token 등록`을 누릅니다.
 7. Coding_Quiz 백엔드는 로그인 사용자의 `username`으로 notification-be용 JWT를 만들고 `/v1/devices`를 호출합니다.
-8. 사용자가 `CodingQuiz 백엔드로 발송 요청`을 누릅니다.
-9. Coding_Quiz 백엔드는 같은 `username`과 template code로 `/v1/messages:sendUser`를 호출합니다.
-10. notification-be가 Firebase FCM으로 발송합니다.
-11. `/fcm-test` 페이지가 열려 있으면 foreground 수신 로그에 payload가 표시됩니다.
+8. 사용자가 `sendUser 발송 요청` 또는 `sendDefinition 발송 요청`을 누릅니다.
+9. Coding_Quiz 백엔드는 `sendUser`면 username/template code로 `/v1/messages:sendUser`를 호출합니다.
+10. Coding_Quiz 백엔드는 `sendDefinition`이면 definition code/template code로 `/v1/messages:sendDefinition`을 호출합니다.
+11. notification-be가 Firebase FCM으로 발송합니다.
+12. `/fcm-test` 페이지가 열려 있으면 foreground 수신 로그에 payload가 표시됩니다.
 
 ## 이 코드가 하지 않는 일
 
@@ -248,4 +272,3 @@ NEXT_PUBLIC_NOTIFICATION_TEST_TEMPLATE_CODE
 - Coding_Quiz가 notification-be DB를 직접 수정하지 않습니다.
 - `/fcm-test` 화면에서 user id를 직접 입력하지 않습니다.
 - background 알림 표시는 테스트 범위에 포함하지 않습니다.
-

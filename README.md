@@ -131,6 +131,7 @@ FCM test proxy:
 - `GET /fcm-test/config`
 - `POST /fcm-test/register-device`
 - `POST /fcm-test/send`
+- `POST /fcm-test/send-definition`
 
 ## FCM 알림 서버 테스트 요약
 
@@ -148,7 +149,7 @@ Coding_Quiz frontend
 
 - `Coding_Quiz frontend`: FCM token 발급, foreground 수신 로그 표시
 - `Coding_Quiz backend`: 로그인 유저 기준으로 notification-be에 token 등록/발송 요청 전달
-- `tvcf-notification-be`: User, Template, Device token을 조회하고 Firebase FCM 발송
+- `tvcf-notification-be`: User, Template, Subscription, Device token을 조회하고 Firebase FCM 발송
 
 준비해야 하는 것:
 
@@ -157,7 +158,7 @@ Coding_Quiz frontend
 | Firebase Console | Web app config, VAPID key, service account JSON |
 | Coding_Quiz frontend | Firebase public env, `NEXT_PUBLIC_API_URL` |
 | Coding_Quiz backend | notification-be URL, template code |
-| notification-be DB | `User_TM.UserId`, `NotificationTemplate_TM.Code` |
+| notification-be DB | `User_TM.UserId`, `NotificationTemplate_TM.Code`, 필요 시 `NotificationSubscription_TM` |
 | notification-be 실행 환경 | `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_CLOUD_PROJECT` |
 
 필요한 기준:
@@ -168,6 +169,8 @@ Coding_Quiz 로그인 username
 = NotificationDevice_TM.UserId
 = /v1/messages:sendUser body.user_id
 ```
+
+`sendDefinition` 테스트는 `NotificationSubscription_TM`에 로그인 username과 definition이 연결되어 있어야 target이 잡힙니다.
 
 테스트 페이지:
 
@@ -181,7 +184,7 @@ http://localhost:3000/fcm-test
 1. Coding_Quiz 로그인
 2. FCM token 발급
 3. Token 등록
-4. CodingQuiz 백엔드로 발송 요청
+4. 유저 직접 발송 또는 구독 기반 발송 요청
 5. Foreground 수신 로그 확인
 ```
 
