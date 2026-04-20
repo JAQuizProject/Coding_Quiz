@@ -1,19 +1,10 @@
 # notification-be 회의 메모
 
-이 문서는 `Coding_Quiz`로 알림 서버를 테스트하면서 확인한 notification-be 쪽 논의 안건만 요약한다.
+이 문서는 `Coding_Quiz` 테스트 중 확인한 notification-be 쪽 논의 안건만 정리한다.
 
-`Coding_Quiz` 자체 요구사항이 아니라, 알림 서버가 실제 서비스 프로젝트들과 안정적으로 연동되기 위해 확인해야 할 내용이다.
+Coding_Quiz 기능 요구사항이 아니라, notification-be를 실제 서비스들과 안정적으로 연동하기 위해 확인할 내용이다.
 
-## 전제
-
-```text
-notification-be 사용자 기준 = User_TM.UserId
-Coding_Quiz 테스트 사용자 기준 = 로그인 username
-```
-
-## 논의 안건
-
-### 1. FCM token 등록은 idempotent해야 함
+## 1. Device token 재등록 정책
 
 현재 확인된 동작:
 
@@ -22,79 +13,79 @@ Coding_Quiz 테스트 사용자 기준 = 로그인 username
 -> 400 Device already exists
 ```
 
-논의 방향:
+논의할 내용:
+
+- 같은 token 재등록을 성공으로 볼지
+- 기존 device row를 반환할지, 갱신할지
+- 같은 브라우저 token이 다른 UserId로 들어오면 소유권을 옮길지
+- `State=0`인 device가 있을 때 재등록을 어떻게 처리할지
+
+실제 서비스에서는 로그인, 새로고침, 앱 재접속으로 token 등록 요청이 반복될 수 있다.
+따라서 `/v1/devices`는 단순 insert보다 upsert 성격이 필요하다.
+
+## 2. Device / Browser 식별
+
+확인한 내용:
 
 ```text
-같은 token이면 에러가 아니라 기존 device 반환 또는 갱신
-같은 user/browser에서 token이 바뀌면 기존 row update
-새 로그인 사용자가 같은 token을 등록하면 현재 UserId 기준으로 소유권 갱신 검토
+User-Agent가 전달되면 BrowserFamily가 Chrome 등으로 저장된다.
+User-Agent가 없거나 파싱 실패하면 빈 값이 저장될 수 있다.
 ```
 
-결정해야 할 것:
+논의할 내용:
+
+- User-Agent가 없을 때 허용할지
+- unknown 값으로 저장할지
+- 원본 User-Agent를 별도 저장할지
+- `UserId + DeviceFamily + BrowserFamily` 기준으로 token 갱신을 할지
+
+## 3. LastUsedAt 갱신 시점
+
+현재 테스트 관점에서는 `LastUsedAt`이 명확한 사용 시점으로 갱신되지 않는다.
+
+논의할 내용:
+
+- token 등록 성공 시 갱신할지
+- FCM 발송 성공 시 갱신할지
+- foreground 수신 ack가 생긴 뒤 갱신할지
+
+현재 구조에서는 수신 ack가 없으므로 발송 성공 또는 token 등록 성공 기준이 현실적이다.
+
+## 4. Subscription 재등록 정책
+
+구독 기반 발송을 쓰려면 `NotificationSubscription_TM`이 필요하다.
+
+논의할 내용:
+
+- 같은 `UserId + DefinitionId` 재등록을 성공으로 볼지
+- 기존 subscription을 반환할지
+- 해지/재구독 상태값이 필요한지
+
+device token과 마찬가지로 구독 등록도 반복 호출에 안전한 편이 좋다.
+
+## 5. Firebase 설정 오류
+
+확인한 오류:
 
 ```text
-같은 token이 들어왔을 때 기존 row 반환인지 update인지
-다른 UserId에 있던 token을 현재 UserId로 옮길지
-응답 status를 200으로 할지 201로 유지할지
+Project ID is required to access Cloud Messaging service.
 ```
 
-### 2. User-Agent 전달과 device/browser 식별
-
-현재 테스트에서는 서비스 backend가 원본 브라우저 `User-Agent`를 notification-be로 전달한다.
-
-논의 방향:
+원인:
 
 ```text
-User-Agent가 비어 있을 때 저장 정책 확정
-DeviceFamily / BrowserFamily 파싱 실패 시 기본값 정책 확정
-UserId + DeviceFamily + BrowserFamily unique 제약과 token 갱신 정책 정리
+GOOGLE_APPLICATION_CREDENTIALS 또는 GOOGLE_CLOUD_PROJECT 설정 누락
 ```
 
-결정해야 할 것:
+논의할 내용:
 
-```text
-User-Agent가 없을 때 허용할지
-unknown 값으로 저장할지
-원본 User-Agent를 별도 컬럼으로 남길지
-```
+- 서버 시작 시 Firebase 설정을 검증할지
+- 발송 시점에만 검증할지
+- 설정 누락 응답을 500 대신 명확한 에러 body로 줄지
 
-### 3. Firebase Admin SDK 설정 검증
+## 정리
 
-notification-be가 실제 FCM을 보내려면 Firebase Admin SDK credential이 필요하다.
+현재 가장 중요한 논의는 두 가지다.
 
-논의 방향:
-
-```text
-GOOGLE_APPLICATION_CREDENTIALS 주입 방식 정리
-GOOGLE_CLOUD_PROJECT 설정 방식 정리
-서버 시작 또는 발송 전 설정 누락을 명확히 감지
-```
-
-결정해야 할 것:
-
-```text
-로컬/개발/운영별 credential 주입 방식
-서버 시작 시 설정 검증 여부
-설정 누락 시 응답 메시지 형식
-```
-
-### 4. 응답 코드와 에러 형태 정리
-
-서비스 backend가 notification-be를 호출하려면 실패 응답 기준이 명확해야 한다.
-
-논의 방향:
-
-```text
-중복 token
-User_TM에 UserId 없음
-template_code 없음
-Firebase 설정 누락
-예상하지 못한 DB 오류
-```
-
-각 케이스의 HTTP status와 response body 형태를 정해야 한다.
-
-## 결론
-
-현재 테스트의 핵심 발견은 `/v1/devices`가 단순 insert API처럼 동작한다는 점이다.
-실제 서비스 연동에서는 token 등록이 반복될 수 있으므로, device 등록 API는 upsert 성격으로 정리되는 것이 좋다.
+1. `/v1/devices`와 `/v1/subscriptions`를 반복 호출에 안전하게 만들지
+2. Firebase credential 누락처럼 운영자가 바로 이해해야 하는 오류를 명확한 응답으로 줄지

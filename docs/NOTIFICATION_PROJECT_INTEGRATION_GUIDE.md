@@ -1,13 +1,10 @@
 # Notification Project Integration Guide
 
-이 문서는 실제 서비스 프로젝트가 `tvcf-notification-be`에 붙을 때의 역할 분리를 요약한다.
+이 문서는 실제 서비스 프로젝트가 `tvcf-notification-be`를 사용할 때의 역할 분리를 요약한다.
 
-`Coding_Quiz`는 이 구조를 확인하기 위한 테스트 클라이언트다.
-운영 알림 정책을 `Coding_Quiz` 안에 구현하는 것이 목적이 아니다.
+`Coding_Quiz`는 이 구조를 검증하기 위한 테스트 클라이언트다.
 
-## 전체 구조
-
-권장 흐름:
+## 기본 구조
 
 ```text
 Service frontend
@@ -18,131 +15,93 @@ Service frontend
 ```
 
 프론트가 notification-be를 직접 호출하지 않는다.
-
-## 사용자 기준
-
-회사 서비스가 같은 사용자 테이블을 공유한다는 전제에서는 notification-be 기준 사용자도 `User_TM.UserId`다.
-
-```text
-서비스 로그인 사용자
-  -> 서비스 backend에서 User_TM.UserId 확정
-  -> notification-be에 같은 UserId 기준으로 token 등록/발송 요청
-```
+서비스 backend가 현재 사용자와 발송 이벤트를 확정한 뒤 notification-be를 호출한다.
 
 ## Frontend 역할
 
 프론트는 알림을 받을 준비만 한다.
 
 ```text
-Firebase Web SDK 초기화
+로그인 상태 확인
+사용자 알림 동의 확인
 브라우저 알림 권한 요청
-FCM registration token 발급
-발급 token을 자기 backend로 전달
-foreground 수신 처리
+Firebase getToken()으로 FCM token 발급
+자기 서비스 backend로 token 전달
+foreground onMessage() 수신 처리
 ```
 
-프론트가 보내는 값:
-
-```json
-{
-  "registration_token": "<browser fcm token>"
-}
-```
-
-프론트가 직접 결정하지 않는 값:
+token 발급 권장 시점:
 
 ```text
-user_id
-server-to-server 인증값
-Firebase service account
+최초: 로그인 후 사용자가 알림 수신을 허용한 직후
+이후: 앱 시작 또는 알림 설정 화면 진입 시, 권한이 granted이고 알림 설정이 ON일 때
 ```
 
-즉 프론트는 "누구에게 보낼지"를 판단하지 않는다.
-프론트는 현재 브라우저가 받을 수 있는 token만 backend로 넘긴다.
+프론트가 직접 정하지 않는 값:
+
+- notification-be `UserId`
+- server-to-server 인증값
+- 발송 대상
+- template code
+- Firebase service account
 
 ## Backend 역할
 
 서비스 backend는 현재 사용자와 알림 이벤트를 확정한다.
 
 ```text
-현재 로그인 User_TM.UserId 확인
-frontend가 준 registration_token을 notification-be에 등록
-서비스 이벤트 발생 후 발송 대상 UserId 결정
-template_code 결정
-notification-be /v1/messages:sendUser 호출
+현재 로그인 사용자 확인
+notification-be UserId 확정
+frontend가 준 FCM token 등록
+필요하면 definition 구독 등록
+서비스 이벤트 성공 후 발송 요청
+notification-be 오류 로그 처리
 ```
 
-backend가 확정하는 값:
-
-| 값 | 의미 |
-| --- | --- |
-| 현재 UserId | token 등록 대상 또는 발송 대상 |
-| registration_token | frontend가 넘긴 브라우저 token |
-| template_code | 어떤 문구로 보낼지 정하는 코드 |
-| 발송 시점 | 서비스 DB 작업이 성공한 뒤 |
-
-token 등록 개념:
+주요 호출:
 
 ```text
 POST /v1/devices
-Cookie 또는 server-to-server 인증으로 현재 UserId 전달
-body: { registration_token }
-```
-
-단일 사용자 발송:
-
-```http
+POST /v1/subscriptions
 POST /v1/messages:sendUser
-Content-Type: application/json
-
-{
-  "user_id": "<target User_TM.UserId>",
-  "template_code": "<template code>"
-}
+POST /v1/messages:sendDefinition
 ```
 
 ## notification-be 역할
 
-notification-be는 알림 발송 서버다.
+notification-be는 알림 저장/발송 서버다.
 
 ```text
 User_TM 확인
 NotificationDevice_TM에 token 저장
+NotificationSubscription_TM에 구독 저장
 NotificationTemplate_TM 조회
-대상 UserId의 device token 조회
+대상 device token 조회
 Firebase Admin SDK로 FCM 발송
 NotificationMessage_TM에 결과 저장
 ```
 
-## Coding_Quiz 테스트와 실제 서비스의 차이
+## Coding_Quiz 테스트와 실제 서비스 차이
 
-현재 테스트:
+Coding_Quiz 테스트:
 
 ```text
-Coding_Quiz frontend
-  -> /fcm-test 화면에서 token 발급/수신 확인
-
-Coding_Quiz backend
-  -> 로그인 username을 User_TM.UserId처럼 사용
-  -> notification-be에 token 등록/발송 요청
+Coding_Quiz 로그인 username을 notification-be UserId처럼 사용
+/fcm-test 화면에서 token 등록, 구독 등록, 발송 요청을 수동 실행
 ```
 
 실제 서비스:
 
 ```text
-서비스 frontend
-  -> 서비스 UI에서 token 발급/수신 처리
-
-서비스 backend
-  -> SSO/session으로 현재 User_TM.UserId 확정
-  -> 실제 업무 이벤트 이후 notification-be에 발송 요청
+서비스의 실제 로그인/권한/업무 이벤트 기준으로 UserId와 발송 시점을 결정
+서비스 backend에서 notification-be 호출
 ```
 
-예시:
+예:
 
 ```text
 댓글 저장 성공
-  -> 댓글 대상 사용자 UserId 결정
+  -> 댓글 대상 사용자 결정
   -> 댓글 알림 template_code 선택
   -> notification-be /v1/messages:sendUser 호출
 ```
@@ -151,31 +110,25 @@ Coding_Quiz backend
 
 Frontend:
 
-```text
-Firebase config env 반영
-VAPID key env 반영
-알림 권한 요청 UI
-getToken() 처리
-foreground onMessage() 처리
-token을 자기 backend로 전달
-```
+- Firebase Web SDK 설정
+- VAPID key 설정
+- 알림 권한 요청 UI
+- `getToken()` 처리
+- foreground `onMessage()` 처리
+- token을 자기 backend로 전달
 
 Backend:
 
-```text
-현재 User_TM.UserId 확인
-token 등록 endpoint 구현
-notification-be /v1/devices 호출
-이벤트별 template_code 관리
-notification-be /v1/messages:sendUser 호출
-notification-be 호출 실패 로그 처리
-```
+- 현재 사용자와 notification-be `UserId` 매핑
+- token 등록 API
+- 구독 등록 API가 필요한지 판단
+- 이벤트별 template/definition code 관리
+- notification-be 호출 실패 로그
 
 notification-be:
 
-```text
-Firebase Admin SDK env 설정
-필요 template 준비
-device token 저장 정책 확정
-발송 이력 저장 확인
-```
+- Firebase Admin SDK credential 설정
+- template/definition seed
+- device token 등록 정책
+- subscription 등록 정책
+- 발송 이력 저장 정책
