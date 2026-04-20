@@ -62,6 +62,7 @@ def require_current_user(current_user: User | None) -> User:
     return current_user
 
 
+# 현재 테스트 설정 반환
 @router.get("/config", response_model=NotificationTestConfigResponse)
 def get_notification_test_config() -> NotificationTestConfigResponse:
     return NotificationTestConfigResponse(
@@ -76,6 +77,7 @@ def get_notification_test_config() -> NotificationTestConfigResponse:
     )
 
 
+# Post /v1/devices 로그인 유저 기준으로 FCM token 등록
 @router.post("/register-device", response_model=RegisterDeviceTestResponse)
 def register_test_device(
     request: Request,
@@ -118,6 +120,7 @@ def register_test_device(
     )
 
 
+# Post /v1/subscriptions 로그인 유저 기준으로 구독 등록
 @router.post("/subscribe-definition", response_model=SubscribeDefinitionTestResponse)
 def subscribe_test_definition(
     payload: SubscribeDefinitionTestRequest,
@@ -167,6 +170,7 @@ def subscribe_test_definition(
     )
 
 
+# Post /v1/messages:sendUser 로그인 유저 기준으로 직접 발송
 @router.post("/send", response_model=SendNotificationTestResponse)
 def send_test_notification(
     payload: SendNotificationTestRequest,
@@ -216,6 +220,7 @@ def send_test_notification(
     )
 
 
+# Post /v1/messages:sendDefinition 로그인 유저 기준으로 구독 기반 발송
 @router.post("/send-definition", response_model=SendNotificationTestResponse)
 def send_test_definition_notification(
     payload: SendDefinitionNotificationTestRequest,
