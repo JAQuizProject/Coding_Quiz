@@ -24,6 +24,7 @@ FCM 테스트 프록시가 사용할 환경변수를 읽습니다.
 FCM_TEST_PROXY_ENABLED
 TVCF_NOTIFICATION_BASE_URL
 TVCF_NOTIFICATION_DEVICE_PATH
+TVCF_NOTIFICATION_SUBSCRIPTION_PATH
 TVCF_NOTIFICATION_SEND_USER_PATH
 TVCF_NOTIFICATION_SEND_DEFINITION_PATH
 TVCF_NOTIFICATION_AUTH_TOKEN
@@ -54,6 +55,7 @@ FCM_TEST_DEFINITION_CODE
 ```text
 GET  /fcm-test/config
 POST /fcm-test/register-device
+POST /fcm-test/subscribe-definition
 POST /fcm-test/send
 POST /fcm-test/send-definition
 ```
@@ -63,6 +65,7 @@ POST /fcm-test/send-definition
 - Coding_Quiz 로그인 토큰을 확인합니다.
 - 로그인한 사용자의 `username`을 notification-be의 `UserId`로 사용합니다.
 - token 등록 요청을 notification-be `/v1/devices`로 전달합니다.
+- 구독 등록 요청을 notification-be `/v1/subscriptions`로 전달합니다.
 - 발송 요청을 notification-be `/v1/messages:sendUser`로 전달합니다.
 - 구독 기반 발송 요청을 notification-be `/v1/messages:sendDefinition`으로 전달합니다.
 
@@ -92,6 +95,17 @@ User-Agent: CodingQuiz-FCM-Test/1.0
 
 여기서 `access_token`은 Coding_Quiz 백엔드가 테스트용으로 생성합니다.
 JWT payload의 `userId`에는 로그인 사용자의 `username`이 들어갑니다.
+
+구독 등록:
+
+```text
+POST {TVCF_NOTIFICATION_BASE_URL}/v1/subscriptions
+
+{
+  "user_id": "<Coding_Quiz username>",
+  "definition_code": "<NotificationDefinition code>"
+}
+```
 
 발송 요청:
 
@@ -123,6 +137,7 @@ POST {TVCF_NOTIFICATION_BASE_URL}/v1/messages:sendDefinition
 
 - 설정 응답
 - token 등록 요청/응답
+- 구독 등록 요청/응답
 - 발송 요청/응답
 - 구독 기반 발송 요청/응답
 - notification-be 응답 래퍼
@@ -137,6 +152,7 @@ POST {TVCF_NOTIFICATION_BASE_URL}/v1/messages:sendDefinition
 
 - `GET /fcm-test/config`
 - `POST /fcm-test/register-device`
+- `POST /fcm-test/subscribe-definition`
 - `POST /fcm-test/send`
 - `POST /fcm-test/send-definition`
 - `localStorage`의 로그인 토큰을 `Authorization: Bearer ...` 헤더로 전달
@@ -153,8 +169,9 @@ POST {TVCF_NOTIFICATION_BASE_URL}/v1/messages:sendDefinition
 2. 브라우저 알림 권한 요청
 3. Firebase `getToken()`으로 FCM registration token 발급
 4. 발급된 token을 Coding_Quiz 백엔드에 등록 요청
-5. Coding_Quiz 백엔드에 유저 직접 발송 또는 구독 기반 발송 요청
-6. foreground `onMessage`로 수신 payload 표시
+5. 구독 기반 발송을 테스트할 경우 Coding_Quiz 백엔드에 구독 등록 요청
+6. Coding_Quiz 백엔드에 유저 직접 발송 또는 구독 기반 발송 요청
+7. foreground `onMessage`로 수신 payload 표시
 
 이 화면은 로그인 후 사용하는 것을 기준으로 합니다.
 발송 대상 user id는 직접 입력하지 않고, 백엔드에서 로그인 사용자의 `username`으로 결정합니다.
@@ -167,6 +184,7 @@ POST {TVCF_NOTIFICATION_BASE_URL}/v1/messages:sendDefinition
 
 - token 발급
 - token 등록과 notification-be 연결 정보
+- 구독 등록
 - 유저 직접 발송
 - 구독 기반 발송
 - foreground 수신 로그
@@ -203,6 +221,7 @@ Coding_Quiz 백엔드가 notification-be 규칙에 맞게 요청을 만드는지
 - 로그인 사용자의 `username`을 notification-be `UserId`로 사용하는지
 - token 등록 요청이 `/v1/devices`로 전달되는지
 - 등록 요청에 access token cookie가 들어가는지
+- 구독 등록 요청이 `/v1/subscriptions`로 전달되는지
 - 발송 요청이 `/v1/messages:sendUser`로 전달되는지
 - 구독 기반 발송 요청이 `/v1/messages:sendDefinition`으로 전달되는지
 - template code가 body 또는 환경변수에서 적용되는지
@@ -224,6 +243,7 @@ Coding_Quiz 백엔드에서 notification-be를 호출하기 위한 값이 정리
 FCM_TEST_PROXY_ENABLED
 TVCF_NOTIFICATION_BASE_URL
 TVCF_NOTIFICATION_DEVICE_PATH
+TVCF_NOTIFICATION_SUBSCRIPTION_PATH
 TVCF_NOTIFICATION_SEND_USER_PATH
 TVCF_NOTIFICATION_SEND_DEFINITION_PATH
 TVCF_NOTIFICATION_USER_AGENT
@@ -260,11 +280,13 @@ NEXT_PUBLIC_NOTIFICATION_TEST_DEFINITION_CODE
 5. 브라우저가 알림 권한을 허용하면 Firebase `getToken()`으로 token을 받습니다.
 6. 사용자가 `Token 등록`을 누릅니다.
 7. Coding_Quiz 백엔드는 로그인 사용자의 `username`으로 notification-be용 JWT를 만들고 `/v1/devices`를 호출합니다.
-8. 사용자가 `sendUser 발송 요청` 또는 `sendDefinition 발송 요청`을 누릅니다.
-9. Coding_Quiz 백엔드는 `sendUser`면 username/template code로 `/v1/messages:sendUser`를 호출합니다.
-10. Coding_Quiz 백엔드는 `sendDefinition`이면 definition code/template code로 `/v1/messages:sendDefinition`을 호출합니다.
-11. notification-be가 Firebase FCM으로 발송합니다.
-12. `/fcm-test` 페이지가 열려 있으면 foreground 수신 로그에 payload가 표시됩니다.
+8. 구독 기반 발송을 테스트할 경우 사용자가 `Definition 구독 등록`을 누릅니다.
+9. Coding_Quiz 백엔드는 로그인 사용자의 `username`과 definition code로 `/v1/subscriptions`를 호출합니다.
+10. 사용자가 `sendUser 발송 요청` 또는 `sendDefinition 발송 요청`을 누릅니다.
+11. Coding_Quiz 백엔드는 `sendUser`면 username/template code로 `/v1/messages:sendUser`를 호출합니다.
+12. Coding_Quiz 백엔드는 `sendDefinition`이면 definition code/template code로 `/v1/messages:sendDefinition`을 호출합니다.
+13. notification-be가 Firebase FCM으로 발송합니다.
+14. `/fcm-test` 페이지가 열려 있으면 foreground 수신 로그에 payload가 표시됩니다.
 
 ## 이 코드가 하지 않는 일
 

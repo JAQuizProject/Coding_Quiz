@@ -15,6 +15,7 @@ Coding_Quiz frontend
 Coding_Quiz backend
   -> 로그인 유저 확인
   -> notification-be /v1/devices 호출
+  -> notification-be /v1/subscriptions 호출
   -> notification-be /v1/messages:sendUser 호출
   -> notification-be /v1/messages:sendDefinition 호출
 
@@ -45,7 +46,7 @@ NotificationDefinition_TM.Code = <테스트 definition_code>
 ```
 
 유저 직접 발송은 `User_TM`, `NotificationTemplate_TM`, `NotificationDevice_TM`가 필요하다.
-구독 기반 발송은 추가로 `NotificationSubscription_TM`에 로그인 username과 definition이 연결되어 있어야 한다.
+구독 기반 발송은 `/fcm-test` 화면에서 `Definition 구독 등록`을 먼저 실행해 `NotificationSubscription_TM`에 로그인 username과 definition을 연결한다.
 
 ```text
 로그인 username
@@ -61,6 +62,7 @@ Coding_Quiz backend `.env`:
 FCM_TEST_PROXY_ENABLED=true
 TVCF_NOTIFICATION_BASE_URL=http://127.0.0.1:8001
 TVCF_NOTIFICATION_DEVICE_PATH=/v1/devices
+TVCF_NOTIFICATION_SUBSCRIPTION_PATH=/v1/subscriptions
 TVCF_NOTIFICATION_SEND_USER_PATH=/v1/messages:sendUser
 TVCF_NOTIFICATION_SEND_DEFINITION_PATH=/v1/messages:sendDefinition
 TVCF_NOTIFICATION_USER_AGENT=CodingQuiz-FCM-Test/1.0
@@ -132,8 +134,9 @@ http://localhost:3000/fcm-test
 2. /fcm-test 접속
 3. FCM token 발급
 4. Token 등록
-5. 유저 직접 발송 또는 구독 기반 발송 요청
-6. Foreground 수신 로그 확인
+5. 구독 기반 발송을 테스트할 경우 Definition 구독 등록
+6. 유저 직접 발송 또는 구독 기반 발송 요청
+7. Foreground 수신 로그 확인
 ```
 
 성공 기준:
@@ -150,10 +153,11 @@ Foreground 수신 로그에 title/body 표시
 | 영역 | 확인 내용 |
 | --- | --- |
 | 1. Token 발급 | 권한 상태가 `granted`이고 textarea에 FCM token 표시 |
-| 2. Token 등록 | Base URL, Device API, Send User API, Send Definition API가 로컬 notification-be 주소와 일치 |
-| 3. 유저 직접 발송 | 로그인 username과 template code로 `sendUser` 테스트 |
-| 4. 구독 기반 발송 | definition code와 template code로 `sendDefinition` 테스트 |
-| 5. Foreground 수신 로그 | 발송 후 title/body payload가 표시됨 |
+| 2. Token 등록 | Base URL, Device API, Subscription API, Send User API, Send Definition API가 로컬 notification-be 주소와 일치 |
+| 3. 구독 등록 | 로그인 username과 definition code로 `NotificationSubscription_TM` 연결 |
+| 4. 유저 직접 발송 | 로그인 username과 template code로 `sendUser` 테스트 |
+| 5. 구독 기반 발송 | definition code와 template code로 `sendDefinition` 테스트 |
+| 6. Foreground 수신 로그 | 발송 후 title/body payload가 표시됨 |
 
 ## 요청 흐름
 
@@ -175,6 +179,26 @@ notification-be로 전달되는 body:
 ```json
 {
   "registration_token": "<browser fcm token>"
+}
+```
+
+구독 등록:
+
+```text
+frontend
+  -> POST /fcm-test/subscribe-definition
+
+backend
+  -> POST /v1/subscriptions
+  -> body: { user_id: username, definition_code }
+```
+
+notification-be로 전달되는 body:
+
+```json
+{
+  "user_id": "<Coding_Quiz 로그인 username>",
+  "definition_code": "<NotificationDefinition_TM.Code>"
 }
 ```
 

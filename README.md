@@ -130,6 +130,7 @@ FCM test proxy:
 
 - `GET /fcm-test/config`
 - `POST /fcm-test/register-device`
+- `POST /fcm-test/subscribe-definition`
 - `POST /fcm-test/send`
 - `POST /fcm-test/send-definition`
 
@@ -167,10 +168,11 @@ Coding_Quiz frontend
 Coding_Quiz 로그인 username
 = notification-be User_TM.UserId
 = NotificationDevice_TM.UserId
+= NotificationSubscription_TM.UserId
 = /v1/messages:sendUser body.user_id
 ```
 
-`sendDefinition` 테스트는 `NotificationSubscription_TM`에 로그인 username과 definition이 연결되어 있어야 target이 잡힙니다.
+`sendDefinition` 테스트는 화면에서 `Definition 구독 등록`을 먼저 실행해 로그인 username과 definition을 연결한 뒤 발송합니다.
 
 테스트 페이지:
 
@@ -184,8 +186,9 @@ http://localhost:3000/fcm-test
 1. Coding_Quiz 로그인
 2. FCM token 발급
 3. Token 등록
-4. 유저 직접 발송 또는 구독 기반 발송 요청
-5. Foreground 수신 로그 확인
+4. 구독 기반 발송을 테스트할 경우 Definition 구독 등록
+5. 유저 직접 발송 또는 구독 기반 발송 요청
+6. Foreground 수신 로그 확인
 ```
 
 화면에서 보는 성공 기준:
