@@ -22,6 +22,7 @@ class NotificationProxyService:
         self,
         base_url: str,
         device_path: str,
+        subscription_path: str,
         send_user_path: str,
         send_definition_path: str,
         auth_token: str | None,
@@ -30,6 +31,7 @@ class NotificationProxyService:
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.device_path = device_path if device_path.startswith("/") else f"/{device_path}"
+        self.subscription_path = subscription_path if subscription_path.startswith("/") else f"/{subscription_path}"
         self.send_user_path = send_user_path if send_user_path.startswith("/") else f"/{send_user_path}"
         self.send_definition_path = (
             send_definition_path if send_definition_path.startswith("/") else f"/{send_definition_path}"
@@ -45,6 +47,10 @@ class NotificationProxyService:
     @property
     def send_user_url(self) -> str:
         return f"{self.base_url}{self.send_user_path}"
+
+    @property
+    def subscription_url(self) -> str:
+        return f"{self.base_url}{self.subscription_path}"
 
     @property
     def send_definition_url(self) -> str:
@@ -73,6 +79,16 @@ class NotificationProxyService:
             body={
                 "user_id": user_id,
                 "template_code": template_code,
+            },
+            extra_headers=None,
+        )
+
+    def subscribe_definition(self, user_id: str, definition_code: str) -> NotificationProxyResult:
+        return self._post_json(
+            url=self.subscription_url,
+            body={
+                "user_id": user_id,
+                "definition_code": definition_code,
             },
             extra_headers=None,
         )
@@ -156,6 +172,7 @@ def get_notification_proxy_service() -> NotificationProxyService:
     return NotificationProxyService(
         base_url=config.TVCF_NOTIFICATION_BASE_URL,
         device_path=config.TVCF_NOTIFICATION_DEVICE_PATH,
+        subscription_path=config.TVCF_NOTIFICATION_SUBSCRIPTION_PATH,
         send_user_path=config.TVCF_NOTIFICATION_SEND_USER_PATH,
         send_definition_path=config.TVCF_NOTIFICATION_SEND_DEFINITION_PATH,
         auth_token=config.TVCF_NOTIFICATION_AUTH_TOKEN,

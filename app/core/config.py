@@ -45,6 +45,7 @@ class Config(BaseModel):
     FCM_TEST_PROXY_ENABLED: bool = Field(default=True)
     TVCF_NOTIFICATION_BASE_URL: str = Field(default="http://127.0.0.1:8001")
     TVCF_NOTIFICATION_DEVICE_PATH: str = Field(default="/v1/devices")
+    TVCF_NOTIFICATION_SUBSCRIPTION_PATH: str = Field(default="/v1/subscriptions")
     TVCF_NOTIFICATION_SEND_USER_PATH: str = Field(default="/v1/messages:sendUser")
     TVCF_NOTIFICATION_SEND_DEFINITION_PATH: str = Field(default="/v1/messages:sendDefinition")
     TVCF_NOTIFICATION_AUTH_TOKEN: str | None = Field(default=None)
@@ -82,6 +83,7 @@ def load_config() -> Config:
         FCM_TEST_PROXY_ENABLED=fcm_test_proxy_enabled,
         TVCF_NOTIFICATION_BASE_URL=os.getenv("TVCF_NOTIFICATION_BASE_URL", "http://127.0.0.1:8001"),
         TVCF_NOTIFICATION_DEVICE_PATH=os.getenv("TVCF_NOTIFICATION_DEVICE_PATH", "/v1/devices"),
+        TVCF_NOTIFICATION_SUBSCRIPTION_PATH=os.getenv("TVCF_NOTIFICATION_SUBSCRIPTION_PATH", "/v1/subscriptions"),
         TVCF_NOTIFICATION_SEND_USER_PATH=os.getenv(
             "TVCF_NOTIFICATION_SEND_USER_PATH",
             "/v1/messages:sendUser",

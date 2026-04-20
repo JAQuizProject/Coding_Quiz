@@ -13,6 +13,8 @@ from app.modules.notification_test.schemas import (
     SendDefinitionNotificationTestRequest,
     SendNotificationTestRequest,
     SendNotificationTestResponse,
+    SubscribeDefinitionTestRequest,
+    SubscribeDefinitionTestResponse,
 )
 from app.modules.notification_test.service import (
     NotificationProxyError,
@@ -66,6 +68,7 @@ def get_notification_test_config() -> NotificationTestConfigResponse:
         enabled=config.FCM_TEST_PROXY_ENABLED,
         notification_base_url=config.TVCF_NOTIFICATION_BASE_URL,
         device_path=config.TVCF_NOTIFICATION_DEVICE_PATH,
+        subscription_path=config.TVCF_NOTIFICATION_SUBSCRIPTION_PATH,
         send_user_path=config.TVCF_NOTIFICATION_SEND_USER_PATH,
         send_definition_path=config.TVCF_NOTIFICATION_SEND_DEFINITION_PATH,
         default_template_code=config.FCM_TEST_TEMPLATE_CODE,
@@ -112,6 +115,55 @@ def register_test_device(
         request_body=request_body,
         notification_response=notification_response,
         notification_user_id=notification_user_id,
+    )
+
+
+@router.post("/subscribe-definition", response_model=SubscribeDefinitionTestResponse)
+def subscribe_test_definition(
+    payload: SubscribeDefinitionTestRequest,
+    current_user: User | None = Depends(get_optional_current_user),
+    notification_proxy_service: NotificationProxyService = Depends(get_notification_proxy_service),
+) -> SubscribeDefinitionTestResponse:
+    if not config.FCM_TEST_PROXY_ENABLED:
+        raise HTTPException(status_code=404, detail="FCM test proxy is disabled.")
+
+    current_user = require_current_user(current_user)
+    user_id = map_notification_user_id(current_user)
+    definition_code = payload.definition_code or config.FCM_TEST_DEFINITION_CODE
+    if not definition_code:
+        raise HTTPException(
+            status_code=400,
+            detail="definition_code가 필요합니다. 요청 body나 .env의 FCM_TEST_DEFINITION_CODE로 설정하세요.",
+        )
+
+    request_body = {
+        "user_id": user_id,
+        "definition_code": definition_code,
+    }
+
+    try:
+        notification_response = notification_proxy_service.subscribe_definition(
+            user_id=user_id,
+            definition_code=definition_code,
+        )
+    except NotificationProxyError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": str(exc),
+                "target_url": notification_proxy_service.subscription_url,
+                "notification_status_code": exc.status_code,
+                "notification_body": exc.body,
+                "request_body": request_body,
+            },
+        ) from exc
+
+    return SubscribeDefinitionTestResponse(
+        message="notification-be 구독 등록 요청을 완료했습니다.",
+        target_url=notification_proxy_service.subscription_url,
+        request_body=request_body,
+        notification_response=notification_response,
+        notification_user_id=user_id,
     )
 
 
