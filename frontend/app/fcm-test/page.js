@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getNotificationTestConfig,
   registerNotificationDevice,
+  sendDefinitionNotificationTest,
   sendNotificationTest,
 } from "../../api/notificationTest";
 import styles from "./page.module.css";
@@ -64,6 +65,12 @@ function getErrorMessage(error) {
   return error?.code ? `${message} (${error.code})` : message;
 }
 
+function formatSendSummary(label, responseBody) {
+  return `${label}: target ${formatValue(responseBody.target_count)}, success ${formatValue(
+    responseBody.success_count,
+  )}, failure ${formatValue(responseBody.failure_count)}`;
+}
+
 async function getReadyMessagingRegistration(firebaseConfig) {
   const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
     scope: "/",
@@ -108,15 +115,25 @@ export default function FcmTestPage() {
   const [token, setToken] = useState("");
   const [logs, setLogs] = useState([]);
   const [error, setError] = useState("");
-  const [status, setStatus] = useState("");
+  const [tokenStatus, setTokenStatus] = useState("");
+  const [registrationStatus, setRegistrationStatus] = useState("");
+  const [userSendStatus, setUserSendStatus] = useState("");
+  const [definitionSendStatus, setDefinitionSendStatus] = useState("");
   const [serverConfig, setServerConfig] = useState(null);
   const [notificationUserId, setNotificationUserId] = useState("");
-  const [templateCode, setTemplateCode] = useState(
+  const [userTemplateCode, setUserTemplateCode] = useState(
+    process.env.NEXT_PUBLIC_NOTIFICATION_TEST_TEMPLATE_CODE || "",
+  );
+  const [definitionCode, setDefinitionCode] = useState(
+    process.env.NEXT_PUBLIC_NOTIFICATION_TEST_DEFINITION_CODE || "",
+  );
+  const [definitionTemplateCode, setDefinitionTemplateCode] = useState(
     process.env.NEXT_PUBLIC_NOTIFICATION_TEST_TEMPLATE_CODE || "",
   );
   const [isIssuingToken, setIsIssuingToken] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [isSending, setIsSending] = useState(false);
+  const [isSendingUser, setIsSendingUser] = useState(false);
+  const [isSendingDefinition, setIsSendingDefinition] = useState(false);
   const unsubscribeRef = useRef(null);
 
   const missingEnv = useMemo(
@@ -136,7 +153,9 @@ export default function FcmTestPage() {
     getNotificationTestConfig().then((result) => {
       if (!result?.error) {
         setServerConfig(result);
-        setTemplateCode((current) => current || result.default_template_code || "");
+        setUserTemplateCode((current) => current || result.default_template_code || "");
+        setDefinitionTemplateCode((current) => current || result.default_template_code || "");
+        setDefinitionCode((current) => current || result.default_definition_code || "");
       }
     });
   }, []);
@@ -152,7 +171,7 @@ export default function FcmTestPage() {
 
   const issueToken = async () => {
     setError("");
-    setStatus("");
+    setTokenStatus("");
     setIsIssuingToken(true);
 
     try {
@@ -201,7 +220,7 @@ export default function FcmTestPage() {
       }
 
       setToken(registrationToken);
-      setStatus("FCM token 발급 완료. 이 페이지를 열어두면 foreground 메시지를 받을 수 있습니다.");
+      setTokenStatus("FCM token 발급 완료. 이 페이지를 열어두면 foreground 메시지를 받을 수 있습니다.");
     } catch (nextError) {
       setError(getErrorMessage(nextError));
     } finally {
@@ -212,7 +231,7 @@ export default function FcmTestPage() {
   const copyToken = async () => {
     if (!token) return;
     await navigator.clipboard.writeText(token);
-    setStatus("FCM token을 복사했습니다.");
+    setTokenStatus("FCM token을 복사했습니다.");
   };
 
   const registerDevice = async () => {
@@ -222,7 +241,7 @@ export default function FcmTestPage() {
     }
 
     setError("");
-    setStatus("");
+    setRegistrationStatus("");
     setIsRegistering(true);
     const result = await registerNotificationDevice(token);
     setIsRegistering(false);
@@ -235,17 +254,17 @@ export default function FcmTestPage() {
     if (result.notification_user_id) {
       setNotificationUserId(result.notification_user_id);
     }
-    setStatus(`디바이스 등록 완료: ${formatValue(result.notification_response?.body?.code)}`);
+    setRegistrationStatus(`디바이스 등록 완료: ${formatValue(result.notification_response?.body?.code)}`);
   };
 
-  const sendNotification = async () => {
+  const sendUserNotification = async () => {
     setError("");
-    setStatus("");
-    setIsSending(true);
+    setUserSendStatus("");
+    setIsSendingUser(true);
     const result = await sendNotificationTest({
-      templateCode: templateCode.trim(),
+      templateCode: userTemplateCode.trim(),
     });
-    setIsSending(false);
+    setIsSendingUser(false);
 
     if (result?.error) {
       setError(formatValue(result.error));
@@ -256,11 +275,29 @@ export default function FcmTestPage() {
       setNotificationUserId(result.notification_user_id);
     }
     const responseBody = result.notification_response?.body || {};
-    setStatus(
-      `발송 요청 완료: target ${formatValue(responseBody.target_count)}, success ${formatValue(
-        responseBody.success_count,
-      )}, failure ${formatValue(responseBody.failure_count)}`,
-    );
+    setUserSendStatus(formatSendSummary("유저 직접 발송 완료", responseBody));
+  };
+
+  const sendDefinitionNotification = async () => {
+    setError("");
+    setDefinitionSendStatus("");
+    setIsSendingDefinition(true);
+    const result = await sendDefinitionNotificationTest({
+      definitionCode: definitionCode.trim(),
+      templateCode: definitionTemplateCode.trim(),
+    });
+    setIsSendingDefinition(false);
+
+    if (result?.error) {
+      setError(formatValue(result.error));
+      return;
+    }
+
+    if (result.notification_user_id) {
+      setNotificationUserId(result.notification_user_id);
+    }
+    const responseBody = result.notification_response?.body || {};
+    setDefinitionSendStatus(formatSendSummary("구독 기반 발송 완료", responseBody));
   };
 
   return (
@@ -276,7 +313,10 @@ export default function FcmTestPage() {
       <section className={styles.grid}>
         <div className={styles.panel}>
           <h2 className={styles.panelTitle}>1. Token 발급</h2>
-          <p className={styles.panelText}>권한 상태: {permission}</p>
+          <p className={styles.panelText}>
+            브라우저가 Firebase FCM 메시지를 받을 수 있는 registration token을 발급합니다.
+          </p>
+          <p className={styles.metaText}>권한 상태: {permission}</p>
           {missingEnv.length > 0 && (
             <p className={styles.warning}>필요한 Firebase 환경변수: {missingEnv.join(", ")}</p>
           )}
@@ -287,17 +327,23 @@ export default function FcmTestPage() {
           <button className={styles.secondaryButton} onClick={copyToken} disabled={!token}>
             Token 복사
           </button>
+          {tokenStatus && <p className={styles.success}>{tokenStatus}</p>}
         </div>
 
         <div className={styles.panel}>
-          <h2 className={styles.panelTitle}>2. notification-be 연결</h2>
+          <h2 className={styles.panelTitle}>2. Token 등록</h2>
+          <p className={styles.panelText}>
+            로그인한 CodingQuiz username을 notification-be UserId로 사용해서 현재 브라우저 token을 등록합니다.
+          </p>
           <dl className={styles.configList}>
             <dt>Base URL</dt>
             <dd>{serverConfig?.notification_base_url || "-"}</dd>
             <dt>Device API</dt>
             <dd>{serverConfig?.device_path || "-"}</dd>
-            <dt>Send API</dt>
+            <dt>Send User API</dt>
             <dd>{serverConfig?.send_user_path || "-"}</dd>
+            <dt>Send Definition API</dt>
+            <dd>{serverConfig?.send_definition_path || "-"}</dd>
           </dl>
           <button
             className={styles.secondaryButton}
@@ -306,10 +352,14 @@ export default function FcmTestPage() {
           >
             {isRegistering ? "등록 중" : "Token 등록"}
           </button>
+          {registrationStatus && <p className={styles.success}>{registrationStatus}</p>}
         </div>
 
         <div className={styles.panel}>
-          <h2 className={styles.panelTitle}>3. 발송 요청</h2>
+          <h2 className={styles.panelTitle}>3. 유저 직접 발송</h2>
+          <p className={styles.panelText}>
+            subscription 없이 로그인 username과 template code로 /v1/messages:sendUser를 호출합니다.
+          </p>
           <p className={styles.panelText}>
             User ID: {notificationUserId || "CodingQuiz 로그인 유저 기준 자동 적용"}
           </p>
@@ -317,19 +367,55 @@ export default function FcmTestPage() {
             Template code
             <input
               className={styles.input}
-              value={templateCode}
-              onChange={(event) => setTemplateCode(event.target.value)}
+              value={userTemplateCode}
+              onChange={(event) => setUserTemplateCode(event.target.value)}
               placeholder="NotificationTemplate code"
             />
           </label>
-          <button className={styles.primaryButton} onClick={sendNotification} disabled={isSending}>
-            {isSending ? "발송 중" : "CodingQuiz 백엔드로 발송 요청"}
+          <button className={styles.primaryButton} onClick={sendUserNotification} disabled={isSendingUser}>
+            {isSendingUser ? "발송 중" : "sendUser 발송 요청"}
           </button>
+          {userSendStatus && <p className={styles.success}>{userSendStatus}</p>}
         </div>
 
         <div className={styles.panel}>
-          <h2 className={styles.panelTitle}>4. Foreground 수신 로그</h2>
-          {status && <p className={styles.success}>{status}</p>}
+          <h2 className={styles.panelTitle}>4. 구독 기반 발송</h2>
+          <p className={styles.panelText}>
+            NotificationSubscription_TM에 연결된 유저들에게 /v1/messages:sendDefinition으로 발송합니다.
+          </p>
+          <p className={styles.metaText}>
+            현재 로그인 username이 해당 definition을 구독하고 있고, token 등록이 되어 있어야 수신됩니다.
+          </p>
+          <label className={styles.label}>
+            Definition code
+            <input
+              className={styles.input}
+              value={definitionCode}
+              onChange={(event) => setDefinitionCode(event.target.value)}
+              placeholder="NotificationDefinition code"
+            />
+          </label>
+          <label className={styles.label}>
+            Template code
+            <input
+              className={styles.input}
+              value={definitionTemplateCode}
+              onChange={(event) => setDefinitionTemplateCode(event.target.value)}
+              placeholder="NotificationTemplate code"
+            />
+          </label>
+          <button
+            className={styles.primaryButton}
+            onClick={sendDefinitionNotification}
+            disabled={isSendingDefinition}
+          >
+            {isSendingDefinition ? "발송 중" : "sendDefinition 발송 요청"}
+          </button>
+          {definitionSendStatus && <p className={styles.success}>{definitionSendStatus}</p>}
+        </div>
+
+        <div className={`${styles.panel} ${styles.widePanel}`}>
+          <h2 className={styles.panelTitle}>5. Foreground 수신 로그</h2>
           {error && <pre className={styles.error}>{error}</pre>}
           <div className={styles.logList}>
             {logs.length === 0 ? (

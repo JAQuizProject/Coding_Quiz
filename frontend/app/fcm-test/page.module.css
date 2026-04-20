@@ -57,6 +57,19 @@
   margin: 0 0 12px;
   color: var(--cq-muted);
   font-weight: 650;
+  line-height: 1.6;
+}
+
+.metaText {
+  margin: 0 0 12px;
+  color: rgba(11, 18, 32, 0.72);
+  font-size: 0.92rem;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.widePanel {
+  grid-column: 1 / -1;
 }
 
 .primaryButton,
@@ -156,6 +169,12 @@
   padding: 10px 12px;
   line-height: 1.55;
   overflow-wrap: anywhere;
+}
+
+.warning,
+.success,
+.error {
+  margin: 12px 0 0;
 }
 
 .warning {

@@ -43,3 +43,13 @@ export function sendNotificationTest({ templateCode }) {
     }),
   });
 }
+
+export function sendDefinitionNotificationTest({ definitionCode, templateCode }) {
+  return requestJson("/fcm-test/send-definition", {
+    method: "POST",
+    body: JSON.stringify({
+      definition_code: definitionCode || null,
+      template_code: templateCode || null,
+    }),
+  });
+}
