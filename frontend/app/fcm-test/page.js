@@ -13,6 +13,7 @@ import {
   registerNotificationDevice,
   sendDefinitionNotificationTest,
   sendNotificationTest,
+  subscribeDefinitionNotificationTest,
 } from "../../api/notificationTest";
 import styles from "./page.module.css";
 
@@ -117,6 +118,7 @@ export default function FcmTestPage() {
   const [error, setError] = useState("");
   const [tokenStatus, setTokenStatus] = useState("");
   const [registrationStatus, setRegistrationStatus] = useState("");
+  const [subscriptionStatus, setSubscriptionStatus] = useState("");
   const [userSendStatus, setUserSendStatus] = useState("");
   const [definitionSendStatus, setDefinitionSendStatus] = useState("");
   const [serverConfig, setServerConfig] = useState(null);
@@ -132,6 +134,7 @@ export default function FcmTestPage() {
   );
   const [isIssuingToken, setIsIssuingToken] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const [isSendingUser, setIsSendingUser] = useState(false);
   const [isSendingDefinition, setIsSendingDefinition] = useState(false);
   const unsubscribeRef = useRef(null);
@@ -257,6 +260,26 @@ export default function FcmTestPage() {
     setRegistrationStatus(`디바이스 등록 완료: ${formatValue(result.notification_response?.body?.code)}`);
   };
 
+  const subscribeDefinition = async () => {
+    setError("");
+    setSubscriptionStatus("");
+    setIsSubscribing(true);
+    const result = await subscribeDefinitionNotificationTest({
+      definitionCode: definitionCode.trim(),
+    });
+    setIsSubscribing(false);
+
+    if (result?.error) {
+      setError(formatValue(result.error));
+      return;
+    }
+
+    if (result.notification_user_id) {
+      setNotificationUserId(result.notification_user_id);
+    }
+    setSubscriptionStatus(`구독 등록 완료: ${formatValue(result.notification_response?.body?.code)}`);
+  };
+
   const sendUserNotification = async () => {
     setError("");
     setUserSendStatus("");
@@ -340,6 +363,8 @@ export default function FcmTestPage() {
             <dd>{serverConfig?.notification_base_url || "-"}</dd>
             <dt>Device API</dt>
             <dd>{serverConfig?.device_path || "-"}</dd>
+            <dt>Subscription API</dt>
+            <dd>{serverConfig?.subscription_path || "-"}</dd>
             <dt>Send User API</dt>
             <dd>{serverConfig?.send_user_path || "-"}</dd>
             <dt>Send Definition API</dt>
@@ -356,7 +381,30 @@ export default function FcmTestPage() {
         </div>
 
         <div className={styles.panel}>
-          <h2 className={styles.panelTitle}>3. 유저 직접 발송</h2>
+          <h2 className={styles.panelTitle}>3. 구독 등록</h2>
+          <p className={styles.panelText}>
+            로그인 username과 definition code를 notification-be NotificationSubscription_TM에 연결합니다.
+          </p>
+          <p className={styles.panelText}>
+            User ID: {notificationUserId || "CodingQuiz 로그인 유저 기준 자동 적용"}
+          </p>
+          <label className={styles.label}>
+            Definition code
+            <input
+              className={styles.input}
+              value={definitionCode}
+              onChange={(event) => setDefinitionCode(event.target.value)}
+              placeholder="NotificationDefinition code"
+            />
+          </label>
+          <button className={styles.primaryButton} onClick={subscribeDefinition} disabled={isSubscribing}>
+            {isSubscribing ? "등록 중" : "Definition 구독 등록"}
+          </button>
+          {subscriptionStatus && <p className={styles.success}>{subscriptionStatus}</p>}
+        </div>
+
+        <div className={styles.panel}>
+          <h2 className={styles.panelTitle}>4. 유저 직접 발송</h2>
           <p className={styles.panelText}>
             subscription 없이 로그인 username과 template code로 /v1/messages:sendUser를 호출합니다.
           </p>
@@ -379,7 +427,7 @@ export default function FcmTestPage() {
         </div>
 
         <div className={styles.panel}>
-          <h2 className={styles.panelTitle}>4. 구독 기반 발송</h2>
+          <h2 className={styles.panelTitle}>5. 구독 기반 발송</h2>
           <p className={styles.panelText}>
             NotificationSubscription_TM에 연결된 유저들에게 /v1/messages:sendDefinition으로 발송합니다.
           </p>
@@ -415,7 +463,7 @@ export default function FcmTestPage() {
         </div>
 
         <div className={`${styles.panel} ${styles.widePanel}`}>
-          <h2 className={styles.panelTitle}>5. Foreground 수신 로그</h2>
+          <h2 className={styles.panelTitle}>6. Foreground 수신 로그</h2>
           {error && <pre className={styles.error}>{error}</pre>}
           <div className={styles.logList}>
             {logs.length === 0 ? (

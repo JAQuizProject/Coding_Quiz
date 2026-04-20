@@ -35,6 +35,15 @@ export function registerNotificationDevice(registrationToken) {
   });
 }
 
+export function subscribeDefinitionNotificationTest({ definitionCode }) {
+  return requestJson("/fcm-test/subscribe-definition", {
+    method: "POST",
+    body: JSON.stringify({
+      definition_code: definitionCode || null,
+    }),
+  });
+}
+
 export function sendNotificationTest({ templateCode }) {
   return requestJson("/fcm-test/send", {
     method: "POST",
