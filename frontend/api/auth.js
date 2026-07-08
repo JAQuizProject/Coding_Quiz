@@ -1,5 +1,26 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"; // 환경변수 적용
 
+const getErrorMessage = async (response, fallbackMessage) => {
+  try {
+    const errorBody = await response.json();
+
+    if (typeof errorBody?.detail === "string") {
+      return errorBody.detail;
+    }
+
+    if (Array.isArray(errorBody?.detail) && errorBody.detail.length > 0) {
+      const firstDetail = errorBody.detail[0];
+      if (typeof firstDetail?.msg === "string") {
+        return firstDetail.msg;
+      }
+    }
+  } catch (parseError) {
+    console.error("Error response parse failed:", parseError);
+  }
+
+  return fallbackMessage;
+};
+
 export const signup = async (userData) => {
   try {
     const response = await fetch(`${BASE_URL}/auth/signup`, {
@@ -9,7 +30,8 @@ export const signup = async (userData) => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorMessage = await getErrorMessage(response, "회원가입에 실패했습니다.");
+      return { error: errorMessage };
     }
 
     return await response.json();

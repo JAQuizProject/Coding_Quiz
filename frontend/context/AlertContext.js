@@ -1,7 +1,6 @@
 "use client";
 import { createContext, useContext } from "react";
 import Swal from "sweetalert2";
-import "sweetalert2/dist/sweetalert2.min.css"; // 스타일 적용
 
 const AlertContext = createContext();
 
@@ -11,7 +10,7 @@ export function AlertProvider({ children }) {
       icon: type, // "success", "error", "warning", "info"
       title: title,
       text: text,
-      confirmButtonColor: type === "error" ? "#d33" : "#3085d6",
+      confirmButtonColor: type === "error" ? "#dc2626" : "#0ea5e9",
     });
   };
 

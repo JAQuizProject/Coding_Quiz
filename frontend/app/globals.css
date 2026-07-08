@@ -1,9 +1,205 @@
 @import "bootstrap/dist/css/bootstrap.min.css";
+@import "sweetalert2/dist/sweetalert2.min.css";
 
-/* 추가적인 글로벌 스타일 */
+:root {
+  --cq-nav-height: 72px;
+
+  --cq-ink: #0b1220;
+  --cq-muted: rgba(11, 18, 32, 0.68);
+  --cq-border: rgba(15, 23, 42, 0.12);
+
+  --cq-brand: #0ea5e9;
+  --cq-brand-hover: #0284c7;
+  --cq-brand-active: #0369a1;
+
+  --cq-accent: #f97316;
+
+  --cq-surface: rgba(255, 255, 255, 0.78);
+  --cq-surface-solid: #ffffff;
+  --cq-shadow: 0 18px 55px rgba(2, 8, 23, 0.16);
+  --cq-shadow-soft: 0 10px 28px rgba(2, 8, 23, 0.12);
+
+  --cq-radius: 18px;
+  --cq-radius-sm: 14px;
+
+  /* Bootstrap variable overrides (used by text/link utilities, etc.) */
+  --bs-body-font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --bs-body-color: var(--cq-ink);
+  --bs-border-color: var(--cq-border);
+  --bs-link-color: var(--cq-brand);
+  --bs-link-hover-color: var(--cq-brand-hover);
+  --bs-primary: var(--cq-brand);
+  --bs-primary-rgb: 14, 165, 233;
+}
+
+html,
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f8f9fa;
+  height: 100%;
+}
+
+body {
   margin: 0;
   padding: 0;
+  color: var(--cq-ink);
+  background:
+    radial-gradient(1200px 700px at 15% -20%, rgba(14, 165, 233, 0.18), transparent 60%),
+    radial-gradient(900px 600px at 110% 0%, rgba(249, 115, 22, 0.14), transparent 55%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  isolation: isolate;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    linear-gradient(to right, rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+    radial-gradient(900px 600px at 10% 20%, rgba(14, 165, 233, 0.12), transparent 55%),
+    radial-gradient(900px 600px at 85% 15%, rgba(249, 115, 22, 0.1), transparent 55%);
+  background-size: 72px 72px, 72px 72px, auto, auto;
+  opacity: 0.7;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+/* Buttons (Bootstrap 5.3: override per-variant CSS variables) */
+.btn-primary {
+  --bs-btn-bg: var(--cq-brand);
+  --bs-btn-border-color: var(--cq-brand);
+  --bs-btn-hover-bg: var(--cq-brand-hover);
+  --bs-btn-hover-border-color: var(--cq-brand-hover);
+  --bs-btn-active-bg: var(--cq-brand-active);
+  --bs-btn-active-border-color: var(--cq-brand-active);
+  --bs-btn-focus-shadow-rgb: 14, 165, 233;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--cq-brand);
+  --bs-btn-border-color: rgba(14, 165, 233, 0.45);
+  --bs-btn-hover-bg: rgba(14, 165, 233, 0.12);
+  --bs-btn-hover-color: var(--cq-ink);
+  --bs-btn-hover-border-color: rgba(14, 165, 233, 0.12);
+  --bs-btn-active-bg: rgba(14, 165, 233, 0.18);
+  --bs-btn-active-border-color: rgba(14, 165, 233, 0.18);
+  --bs-btn-active-color: var(--cq-ink);
+}
+
+/* Forms */
+.form-control,
+.form-select {
+  border-color: rgba(15, 23, 42, 0.16);
+  background-color: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: rgba(14, 165, 233, 0.55);
+  box-shadow: 0 0 0 0.25rem rgba(14, 165, 233, 0.18);
+}
+
+/* Cards */
+.card {
+  border: 1px solid var(--cq-border);
+  border-radius: var(--cq-radius);
+  background: var(--cq-surface);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--cq-shadow-soft);
+}
+
+.card-title {
+  letter-spacing: -0.02em;
+}
+
+/* Tables */
+.table {
+  border-color: var(--cq-border);
+}
+
+.table thead th {
+  color: rgba(11, 18, 32, 0.8);
+  font-weight: 650;
+}
+
+/* Small utilities */
+.cq-muted {
+  color: var(--cq-muted);
+}
+
+.cq-container {
+  max-width: 1120px;
+}
+
+.cq-surface {
+  border: 1px solid var(--cq-border);
+  border-radius: var(--cq-radius);
+  background: var(--cq-surface);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--cq-shadow);
+}
+
+.cq-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  font-weight: 650;
+  color: rgba(11, 18, 32, 0.85);
+}
+
+@keyframes cq-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* SweetAlert2 theme tweaks */
+.swal2-popup {
+  border-radius: 18px !important;
+  box-shadow: var(--cq-shadow) !important;
+}
+
+.swal2-title {
+  letter-spacing: -0.02em;
+  font-weight: 900 !important;
+}
+
+.swal2-html-container {
+  color: rgba(11, 18, 32, 0.74) !important;
+}
+
+.swal2-styled.swal2-confirm {
+  border-radius: 12px !important;
+  font-weight: 900 !important;
 }

@@ -11,12 +11,12 @@ __pycache__/
 
 # 환경 변수 파일 (보안)
 .env
-backend/.env
 frontend/.env
+frontend/.env.local
 
 # SQLite 데이터베이스 파일
-backend/quiz_app.db
 quiz_app.db
+quiz_app.db.bak-*
 
 # FastAPI & Uvicorn 관련
 instance/

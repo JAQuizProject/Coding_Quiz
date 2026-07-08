@@ -28,7 +28,7 @@ export default function CategorySelector({ onSelectCategory, selectedCategory })
           </button>
         ))
       ) : (
-        <p>카테고리를 불러오는 중...</p>
+        <p className="cq-muted mb-0">카테고리를 불러오는 중...</p>
       )}
     </div>
   );

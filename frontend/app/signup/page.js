@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import { signup } from "../../api/auth";
 import { useAlert } from "../../context/AlertContext";
 import { Container, Form, Button, Card, Row, Col } from "react-bootstrap";
@@ -29,32 +31,94 @@ export default function Signup() {
   };
 
   return (
-    <Container className={`${styles.authContainer} d-flex justify-content-center align-items-center`}>
-      <Row className="w-100">
-        <Col md={6} className="mx-auto">
-          <Card className="shadow p-4 rounded">
-            <Card.Title className="text-center fs-3 fw-bold text-success">📝 회원가입</Card.Title>
-            <Form onSubmit={handleSubmit}>
-              <Form.Group className="mb-3">
-                <Form.Label>사용자명</Form.Label>
-                <Form.Control type="text" name="username" placeholder="사용자명 입력" onChange={handleChange} required />
-              </Form.Group>
+    <Container className={`cq-container ${styles.page}`}>
+      <Row className="align-items-stretch gy-4">
+        <Col lg={6}>
+          <Card className={styles.card}>
+            <Card.Body className={styles.cardBody}>
+              <div className={styles.header}>
+                <h1 className={styles.title}>회원가입</h1>
+                <p className={styles.subtitle}>
+                  간단히 가입하고 퀴즈 점수와 랭킹에 도전해 보세요.
+                </p>
+              </div>
 
-              <Form.Group className="mb-3">
-                <Form.Label>이메일</Form.Label>
-                <Form.Control type="email" name="email" placeholder="이메일 입력" onChange={handleChange} required />
-              </Form.Group>
+              <Form onSubmit={handleSubmit} className={styles.form}>
+                <Form.Group className="mb-3">
+                  <Form.Label className={styles.label}>사용자명</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="username"
+                    placeholder="표시될 이름"
+                    autoComplete="username"
+                    onChange={handleChange}
+                    required
+                  />
+                </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>비밀번호</Form.Label>
-                <Form.Control type="password" name="password" placeholder="비밀번호 입력" onChange={handleChange} required />
-              </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label className={styles.label}>이메일</Form.Label>
+                  <Form.Control
+                    type="email"
+                    name="email"
+                    placeholder="name@example.com"
+                    autoComplete="email"
+                    onChange={handleChange}
+                    required
+                  />
+                </Form.Group>
 
-              <Button type="submit" className={`${styles.authButton} w-100 btn-success`}>
-                회원가입
-              </Button>
-            </Form>
+                <Form.Group className="mb-3">
+                  <Form.Label className={styles.label}>비밀번호</Form.Label>
+                  <Form.Control
+                    type="password"
+                    name="password"
+                    placeholder="비밀번호 입력"
+                    autoComplete="new-password"
+                    onChange={handleChange}
+                    required
+                  />
+                </Form.Group>
+
+                <Button type="submit" size="lg" className={`w-100 ${styles.submit}`}>
+                  회원가입
+                </Button>
+              </Form>
+
+              <div className={styles.footer}>
+                이미 계정이 있나요?{" "}
+                <Link href="/login" className={styles.footerLink}>
+                  로그인
+                </Link>
+              </div>
+            </Card.Body>
           </Card>
+        </Col>
+
+        <Col lg={6} className={styles.posterCol}>
+          <div className={`${styles.poster} cq-surface`}>
+            <div className={styles.posterBackdrop} aria-hidden />
+            <div className={styles.posterHeader}>
+              <span className={styles.posterBadge}>TRACK</span>
+              <span className={styles.posterText}>
+                가입하면 점수 히스토리와 랭킹 도전이 바로 시작돼요.
+              </span>
+            </div>
+            <div className={styles.posterImage}>
+              <Image
+                src="/illustrations/signup-score-track.svg"
+                alt="회원가입 후 점수 트래킹 시작 안내"
+                fill
+                sizes="(max-width: 992px) 100vw, 520px"
+                className={styles.posterImg}
+              />
+            </div>
+            <div className={styles.posterMeta}>
+              <span className={styles.metaPill}>학습 기록 시작</span>
+              <span className={styles.metaPill}>개인 점수 추적</span>
+              <span className={styles.metaPill}>랭킹 도전 준비</span>
+            </div>
+          </div>
         </Col>
       </Row>
     </Container>
