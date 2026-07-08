@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AI 기반 PRD 생성기
-LangChain을 사용하여 지능적인 PRD 자동 생성기
+간단한 LangChain 기반 AI PRD 생성기
+최신 LangChain 버전에 맞춘 간단한 구현
 """
 
 import os
@@ -17,12 +17,9 @@ import argparse
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import HumanMessage, SystemMessage
-from langchain.chains import LLMChain
-from langchain.output_parsers import PydanticOutputParser
-from pydantic import BaseModel, Field
 
 class CodebaseAnalyzer:
-    """코드베이스 분석 클래스 (기존 로직 유지)"""
+    """코드베이스 분석 클래스"""
 
     def __init__(self, project_root: str):
         self.project_root = Path(project_root)
@@ -342,7 +339,6 @@ class CodebaseAnalyzer:
                 'patterns': []
             }
 
-            # 간단한 정규식 기반 파싱
             table_match = re.search(r'__tablename__\s*=\s*["\']([^"\']+)["\']', content)
             if table_match:
                 model_info['table_name'] = table_match.group(1)
@@ -504,29 +500,15 @@ class CodebaseAnalyzer:
         """파일 존재 여부 확인"""
         return (self.project_root / filename).exists()
 
-class PRDData(BaseModel):
-    """PRD 데이터 구조 정의"""
-    project_name: str = Field(description="프로젝트명")
-    vision: str = Field(description="제품 비전")
-    core_values: List[str] = Field(description="핵심 가치 목록")
-    target_users: str = Field(description="타겟 사용자")
-    key_features: List[str] = Field(description="핵심 기능 목록")
-    technical_architecture: str = Field(description="기술 아키텍처 설명")
-    security_requirements: List[str] = Field(description="보안 요구사항")
-    performance_requirements: List[str] = Field(description="성능 요구사항")
-    deployment_strategy: str = Field(description="배포 전략")
-    roadmap: List[str] = Field(description="개발 로드맵")
-    kpis: List[str] = Field(description="성공 지표")
-
-class AIPRDGenerator:
-    """AI 기반 PRD 생성기 클래스"""
+class SimpleLangChainPRDGenerator:
+    """간단한 LangChain 기반 AI PRD 생성기"""
 
     def __init__(self, api_key: str = None):
         """AI PRD 생성기 초기화"""
         self.api_key = api_key or os.getenv('OPENAI_API_KEY')
 
         if not self.api_key:
-            print("⚠️ OpenAI API 키가 설정되지 않았습니다. 환경변수 OPENAI_API_KEY를 설정하거나 --api-key 옵션을 사용하세요.")
+            print("⚠️ OpenAI API 키가 설정되지 않았습니다.")
             print("💡 OpenAI API 키를 얻으려면: https://platform.openai.com/api-keys")
             self.llm = None
         else:
@@ -537,34 +519,91 @@ class AIPRDGenerator:
                 openai_api_key=self.api_key
             )
 
-            # 출력 파서 설정
-            self.output_parser = PydanticOutputParser(pydantic_object=PRDData)
-
             # 프롬프트 템플릿 설정
             self.prompt_template = ChatPromptTemplate.from_messages([
                 SystemMessage(content="""당신은 전문적인 제품 기획자(Product Manager)입니다.
-코드베이스 분석 결과를 바탕으로 전문적이고 상세한 PRD(Product Requirements Document)를 생성해야 합니다.
+코드베이스 분석 결과를 바탕으로 전문적이고 상세한 PRD(Product Requirements Document)를 마크다운 형식으로 생성해주세요.
 
-다음 정보를 바탕으로 PRD를 생성하세요:
-- 프로젝트 타입과 기술 스택
-- 비즈니스 도메인
-- 데이터 모델과 API 구조
-- 프론트엔드 기능
+중요: 템플릿이나 플레이스홀더를 사용하지 말고, 실제 구체적인 내용으로 작성해주세요.
+분석된 기술 스택과 기능을 바탕으로 실제 프로젝트에 맞는 PRD를 작성해주세요.
 
-PRD는 다음 구조로 작성하세요:
-1. 제품명과 비전
-2. 핵심 가치 (3-4개)
-3. 타겟 사용자
-4. 핵심 기능 (5-7개)
-5. 기술 아키텍처 설명
-6. 보안 요구사항
-7. 성능 요구사항
-8. 배포 전략
-9. 개발 로드맵 (3단계)
-10. 성공 지표 (KPI)
+다음 구조로 PRD를 작성하세요:
 
-각 섹션은 구체적이고 실행 가능한 내용으로 작성하세요."""),
-                HumanMessage(content="""다음 코드베이스 분석 결과를 바탕으로 PRD를 생성해주세요:
+# [실제 프로젝트명] PRD (Product Requirements Document)
+
+## 📋 문서 정보
+- **버전**: v1.0
+- **작성일**: 2025-09-23
+- **작성자**: AI PRD Generator (LangChain + OpenAI)
+- **프로젝트 타입**: [실제 프로젝트 타입]
+- **비즈니스 도메인**: [실제 비즈니스 도메인]
+- **분석 신뢰도**: [실제 신뢰도]
+
+## 🎯 1. 제품 개요
+### 1.1 제품명
+[실제 제품명]
+
+### 1.2 제품 비전
+[구체적이고 매력적인 실제 비전]
+
+### 1.3 핵심 가치
+- **[실제 가치1]**: [구체적 설명]
+- **[실제 가치2]**: [구체적 설명]
+- **[실제 가치3]**: [구체적 설명]
+- **[실제 가치4]**: [구체적 설명]
+
+### 1.4 타겟 사용자
+[구체적인 실제 사용자 그룹과 니즈]
+
+## 🏗️ 2. 기술 아키텍처
+[현재 기술 스택의 실제 장단점과 확장성에 대한 구체적 설명]
+
+## ⚙️ 3. 핵심 기능
+### 3.1 [실제 기능1]
+[상세한 실제 설명과 우선순위]
+
+### 3.2 [실제 기능2]
+[상세한 실제 설명과 우선순위]
+
+### 3.3 [실제 기능3]
+[상세한 실제 설명과 우선순위]
+
+### 3.4 [실제 기능4]
+[상세한 실제 설명과 우선순위]
+
+### 3.5 [실제 기능5]
+[상세한 실제 설명과 우선순위]
+
+## 🔒 4. 보안 요구사항
+- [구체적인 실제 보안 조치1]
+- [구체적인 실제 보안 조치2]
+- [구체적인 실제 보안 조치3]
+
+## 📈 5. 성능 요구사항
+- [측정 가능한 실제 성능 지표1]
+- [측정 가능한 실제 성능 지표2]
+- [측정 가능한 실제 성능 지표3]
+
+## 🚀 6. 배포 전략
+[단계별 실제 배포 계획]
+
+## 📅 7. 개발 로드맵
+### 7.1 Phase 1 (1-3개월)
+[실제 목표와 기간]
+
+### 7.2 Phase 2 (3-6개월)
+[실제 목표와 기간]
+
+### 7.3 Phase 3 (6-12개월)
+[실제 목표와 기간]
+
+## 📊 8. 성공 지표 (KPI)
+- [실제 KPI1]: [실제 측정 방법]
+- [실제 KPI2]: [실제 측정 방법]
+- [실제 KPI3]: [실제 측정 방법]
+
+각 섹션은 구체적이고 실행 가능한 실제 내용으로 작성하되, 기술적이면서도 비즈니스 관점에서 이해하기 쉽게 작성해주세요."""),
+                HumanMessage(content="""다음 코드베이스 분석 결과를 바탕으로 구체적인 PRD를 생성해주세요:
 
 프로젝트 정보:
 - 프로젝트 타입: {project_type}
@@ -581,15 +620,10 @@ PRD는 다음 구조로 작성하세요:
 API 엔드포인트: {apis_info}
 프론트엔드 기능: {features_info}
 
-{format_instructions}""")
+위 정보를 바탕으로 실제 구체적인 내용으로 PRD를 작성해주세요.
+템플릿이나 플레이스홀더([실제 프로젝트명] 등)를 사용하지 말고,
+실제 프로젝트명, 기능명, 요구사항 등을 구체적으로 작성해주세요.""")
             ])
-
-            # LLM 체인 설정
-            self.chain = LLMChain(
-                llm=self.llm,
-                prompt=self.prompt_template,
-                output_parser=self.output_parser
-            )
 
     def generate_prd(self, analysis_result: Dict) -> str:
         """AI를 사용하여 PRD 생성"""
@@ -600,8 +634,8 @@ API 엔드포인트: {apis_info}
             # 분석 결과를 문자열로 변환
             formatted_data = self._format_analysis_data(analysis_result)
 
-            # AI를 사용하여 PRD 데이터 생성
-            result = self.chain.run(
+            # 프롬프트 생성
+            prompt = self.prompt_template.format_messages(
                 project_type=analysis_result.get('project_type', 'unknown'),
                 business_domain=analysis_result.get('business_domain', 'unknown'),
                 confidence=f"{analysis_result.get('confidence', 0.0):.1%}",
@@ -611,12 +645,14 @@ API 엔드포인트: {apis_info}
                 infrastructure_info=formatted_data['infrastructure'],
                 models_info=formatted_data['models'],
                 apis_info=formatted_data['apis'],
-                features_info=formatted_data['features'],
-                format_instructions=self.output_parser.get_format_instructions()
+                features_info=formatted_data['features']
             )
 
-            # 생성된 PRD 데이터를 마크다운으로 변환
-            return self._convert_to_markdown(result, analysis_result)
+            # AI를 사용하여 PRD 생성
+            response = self.llm.invoke(prompt)
+
+            # 생성된 PRD 반환
+            return response.content
 
         except Exception as e:
             print(f"AI PRD 생성 오류: {e}")
@@ -636,73 +672,6 @@ API 엔드포인트: {apis_info}
             'features': str(analysis_result.get('features', {}))
         }
 
-    def _convert_to_markdown(self, prd_data: PRDData, analysis_result: Dict) -> str:
-        """PRD 데이터를 마크다운으로 변환"""
-        current_date = datetime.now().strftime('%Y-%m-%d')
-
-        return f"""# {prd_data.project_name} PRD (Product Requirements Document)
-
-## 📋 문서 정보
-- **버전**: v1.0
-- **작성일**: {current_date}
-- **작성자**: AI PRD Generator (LangChain + OpenAI)
-- **마지막 수정**: {current_date}
-- **프로젝트 타입**: {analysis_result.get('project_type', 'unknown')}
-- **비즈니스 도메인**: {analysis_result.get('business_domain', 'unknown')}
-- **분석 신뢰도**: {analysis_result.get('confidence', 0.0):.1%}
-
-## 🎯 1. 제품 개요
-### 1.1 제품명
-{prd_data.project_name}
-
-### 1.2 제품 비전
-{prd_data.vision}
-
-### 1.3 핵심 가치
-{chr(10).join([f"- {value}" for value in prd_data.core_values])}
-
-### 1.4 타겟 사용자
-{prd_data.target_users}
-
-## 🏗️ 2. 기술 아키텍처
-{prd_data.technical_architecture}
-
-## ⚙️ 3. 핵심 기능
-{chr(10).join([f"### 3.{i+1} {feature}" for i, feature in enumerate(prd_data.key_features)])}
-
-## 🔒 4. 보안 요구사항
-{chr(10).join([f"- {req}" for req in prd_data.security_requirements])}
-
-## 📈 5. 성능 요구사항
-{chr(10).join([f"- {req}" for req in prd_data.performance_requirements])}
-
-## 🚀 6. 배포 전략
-{prd_data.deployment_strategy}
-
-## 📅 7. 개발 로드맵
-{chr(10).join([f"### 7.{i+1} Phase {i+1}" for i, phase in enumerate(prd_data.roadmap)])}
-
-## 📊 8. 성공 지표 (KPI)
-{chr(10).join([f"- {kpi}" for kpi in prd_data.kpis])}
-
-## 📝 9. 부록
-### 9.1 용어 정의
-- **API**: Application Programming Interface
-- **ORM**: Object-Relational Mapping
-- **JWT**: JSON Web Token
-- **CORS**: Cross-Origin Resource Sharing
-
-### 9.2 참고 자료
-- 프로젝트 관련 공식 문서
-- 사용된 기술 스택 공식 문서
-- 관련 표준 및 규격
-
-### 9.3 변경 이력
-| 버전 | 날짜 | 변경사항 | 작성자 |
-|------|------|----------|--------|
-| v1.0 | {current_date} | 초기 버전 | AI PRD Generator |
-"""
-
     def _generate_fallback_prd(self, analysis_result: Dict) -> str:
         """AI를 사용할 수 없을 때 폴백 PRD 생성"""
         current_date = datetime.now().strftime('%Y-%m-%d')
@@ -712,7 +681,7 @@ API 엔드포인트: {apis_info}
 ## 📋 문서 정보
 - **버전**: v1.0
 - **작성일**: {current_date}
-- **작성자**: AI PRD Generator (Fallback Mode)
+- **작성자**: Simple LangChain PRD Generator (Fallback Mode)
 - **마지막 수정**: {current_date}
 - **프로젝트 타입**: {analysis_result.get('project_type', 'unknown')}
 - **비즈니스 도메인**: {analysis_result.get('business_domain', 'unknown')}
@@ -803,28 +772,16 @@ Coding Quiz Platform
 - 퀴즈 완료율
 - 평균 세션 시간
 
-## 📝 9. 부록
-### 9.1 용어 정의
-- **API**: Application Programming Interface
-- **ORM**: Object-Relational Mapping
-- **JWT**: JSON Web Token
-- **CORS**: Cross-Origin Resource Sharing
-
-### 9.2 참고 자료
-- FastAPI 공식 문서
-- Next.js 공식 문서
-- SQLAlchemy 공식 문서
-
-### 9.3 변경 이력
-| 버전 | 날짜 | 변경사항 | 작성자 |
-|------|------|----------|--------|
-| v1.0 | {current_date} | 초기 버전 | AI PRD Generator |
+## 💡 AI 기능 활성화 방법
+1. OpenAI API 키 발급: https://platform.openai.com/api-keys
+2. 환경변수 설정: `export OPENAI_API_KEY='your-api-key-here'`
+3. 또는 명령어 옵션: `--api-key your-api-key-here`
 """
 
 def main():
-    parser = argparse.ArgumentParser(description='AI 기반 PRD 생성기')
+    parser = argparse.ArgumentParser(description='간단한 LangChain 기반 AI PRD 생성기')
     parser.add_argument('--project-root', default='.', help='프로젝트 루트 디렉토리')
-    parser.add_argument('--output', default='AI_PRD.md', help='출력 파일명')
+    parser.add_argument('--output', default='Simple_LangChain_PRD.md', help='출력 파일명')
     parser.add_argument('--api-key', help='OpenAI API 키')
 
     args = parser.parse_args()
@@ -834,14 +791,14 @@ def main():
     analyzer.analyze_project()
 
     # AI PRD 생성
-    ai_generator = AIPRDGenerator(args.api_key)
+    ai_generator = SimpleLangChainPRDGenerator(args.api_key)
     prd_content = ai_generator.generate_prd(analyzer.analysis_result)
 
     # 파일 저장
     with open(args.output, 'w', encoding='utf-8') as f:
         f.write(prd_content)
 
-    print(f"✅ AI PRD가 {args.output}에 생성되었습니다.")
+    print(f"✅ 간단한 LangChain AI PRD가 {args.output}에 생성되었습니다.")
     print(f"📊 프로젝트 타입: {analyzer.analysis_result['project_type']}")
     print(f"🏢 비즈니스 도메인: {analyzer.analysis_result['business_domain']}")
     print(f"🎯 분석 신뢰도: {analyzer.analysis_result['confidence']:.1%}")
