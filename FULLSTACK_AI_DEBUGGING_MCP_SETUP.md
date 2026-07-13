@@ -1,248 +1,205 @@
-# Chrome DevTools MCP 실습 준비 절차
+# Chrome DevTools MCP 라이브 데모 준비
 
-이 문서는 `Coding_Quiz` 프로젝트에서 **Codex + Chrome DevTools MCP**를 처음 연결하고, 정상 화면을 읽는 데까지의 준비 절차다.
+이 문서는 `Coding_Quiz`에서 Codex가 격리된 Chrome을 직접 조작하고, 화면·Console·Network와 저장소 코드를 함께 조사하는 발표 환경의 기준 절차다.
 
-처음에는 Claude와 Codex를 동시에 설정하지 않는다. Codex에서 한 번 성공한 뒤 같은 MCP를 Claude에 추가한다.
-
----
-
-## 0. 무엇을 연결하는가
+## 1. 구성
 
 ```text
 Codex
-  -> Chrome DevTools MCP
-      -> 테스트 전용 Chrome
-          -> Next.js :3000
-              -> FastAPI :8000
+  -> project .codex/config.toml
+  -> Chrome DevTools MCP 1.5.0
+  -> isolated Chrome
+  -> Next.js :3000
+  -> FastAPI :8000
+  -> local SQLite
 ```
 
-- Codex: 조사 지시를 내리는 AI 클라이언트
-- Chrome DevTools MCP: Chrome의 화면, Console, Network를 Codex에 제공하는 도구
-- Coding_Quiz: 실제로 조사할 로컬 애플리케이션
+프로젝트 전용 MCP 설정은 `.codex/config.toml`에 있다. Codex는 신뢰한 프로젝트에서 프로젝트 범위 설정을 읽는다.
 
-MCP를 설치하는 것과 프로젝트 서버를 실행하는 것은 별개다. 둘 다 정상이어야 실습할 수 있다.
+- MCP 실행: `C:\Program Files\nodejs\npx.cmd`
+- Chrome 실행: `C:\Program Files\Google\Chrome\Application\chrome.exe`
+- 브라우저 프로필: `--isolated`
+- 발표 해상도: `1440x900`
+- 사용 통계와 CrUX 조회: 비활성화
+- Network 민감 헤더: 마스킹
 
----
+공식 기준: [Codex config.toml reference](https://learn.chatgpt.com/docs/config-file/config-reference#configtoml)
 
-## 1. 현재 확인된 환경
+## 2. 확인된 환경
 
 | 항목 | 확인 결과 |
 | --- | --- |
-| Python | `3.13.0` |
-| 프로젝트 가상환경 | `.venv` 존재 |
-| Node 설치 버전 | `20.12.1`, `22.12.0` |
-| 실습에 사용할 Node | `22.12.0` |
-| Chrome | `149.0.7827.200` |
+| Python | `3.13.7` |
+| Node | `26.4.0` |
+| Chrome | `150.0.7871.101` |
 | Codex CLI | `0.144.1` |
-| Chrome DevTools MCP | `1.5.0` 실행 확인 |
-| 백엔드 테스트 | `17 passed` |
-| 프론트 lint/build | 통과 |
+| Chrome DevTools MCP | `1.5.0` |
+| 백엔드 baseline | `17 passed` |
+| 프론트 baseline | 테스트·lint·build 통과 |
 
-최신 `chrome-devtools-mcp`는 Node `20.19.0` 이상이 필요하므로 현재 기본값인 `20.12.1`로는 실행되지 않는다.
+버전은 발표 전 다시 확인하되, Node나 MCP를 발표 직전에 임의 업그레이드하지 않는다.
 
-PowerShell을 새로 열 때 다음 명령으로 Node 22를 우선 사용한다.
+## 3. 최초 1회 setup
+
+저장소 루트에서 실행한다.
 
 ```powershell
-$env:PATH = "$env:APPDATA\nvm\v22.12.0;$env:PATH"
-node --version
-npm --version
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\setup_live_demo.ps1
 ```
 
-성공 기준:
+이 명령은 다음을 순서대로 처리한다.
 
-```text
-v22.12.0
+1. 프로젝트 `.venv` 생성
+2. `poetry.lock` 기준 백엔드 의존성 설치
+3. `frontend/package-lock.json` 기준 `npm ci`
+4. 로컬 데모 계정과 `LiveDemo` 퀴즈 3건 준비
+5. Codex의 `chrome-devtools` MCP 인식 확인
+6. 백엔드 테스트·Ruff와 프론트 테스트·lint·build 실행
+
+setup은 명령 하나라도 실패하면 즉시 중단한다.
+
+## 4. Codex 재시작과 MCP 확인
+
+`.codex/config.toml`을 처음 추가한 뒤에는 현재 Codex 세션을 종료한다. 발표용 Codex는 다음 스크립트로 연다.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\open_live_demo_codex.ps1
 ```
 
-관리자 PowerShell을 사용할 수 있다면 `nvm use 22.12.0`으로 기본 버전을 전환해도 된다.
+이 스크립트는 프로젝트의 Chrome MCP는 유지하고 발표에 필요 없는 전역 원격 MCP를 현재 세션에서만 꺼 인증 로그가 섞이지 않게 한다.
 
----
-
-## 2. Codex MCP 설치 상태 확인
-
-이 PC에는 `chrome-devtools` 서버를 Codex 사용자 설정에 추가해 두었다.
+별도 터미널에서 설정 상태를 확인한다.
 
 ```powershell
 codex mcp get chrome-devtools
 codex mcp list
 ```
 
-다음 값이 보이면 설치된 상태다.
+정상 기준:
 
 ```text
 chrome-devtools
 enabled: true
 transport: stdio
+default_tools_approval_mode: approve
 ```
 
-설정을 지우고 다시 설치해야 할 때만 다음 명령을 사용한다.
+발표용 Codex TUI에서는 `/mcp`를 열어 `chrome-devtools` 도구가 보이는지 확인한다.
+
+## 5. 발표 당일 시작
 
 ```powershell
-codex mcp remove chrome-devtools
-
-codex mcp add chrome-devtools -- cmd /d /s /c `
-  'set "PATH=%APPDATA%\nvm\v22.12.0;%PATH%" && npx -y chrome-devtools-mcp@latest --isolated --no-usage-statistics --no-performance-crux --redact-network-headers'
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start_live_demo.ps1
 ```
 
-옵션의 의미:
+정상 출력:
 
-| 옵션 | 이유 |
+```text
+Backend is ready: http://127.0.0.1:8000/
+Frontend is ready: http://127.0.0.1:3000/login
+Login: live-demo@example.com
+Password: Demo1234!
+Category: LiveDemo
+```
+
+백엔드와 프론트는 숨김 프로세스로 실행되고 로그와 PID는 git에서 제외된 `.demo/`에 저장된다.
+
+백엔드 코드를 수정한 뒤에는 새 코드를 확실히 반영하도록 백엔드만 재시작한다.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start_live_demo.ps1 -RestartBackend -SkipDataPreparation
+```
+
+확인 주소:
+
+- 프론트: `http://127.0.0.1:3000/login`
+- 백엔드: `http://127.0.0.1:8000/`
+- API 문서: `http://127.0.0.1:8000/docs`
+
+## 6. MCP 연결 smoke test
+
+새 Codex 세션에서 실행한다.
+
+```text
+Use only the chrome-devtools MCP server.
+Open http://127.0.0.1:3000/login, wait until the page is fully loaded,
+clear the Console, and reload once. Then report:
+1. current URL
+2. the visible page heading
+3. Console error count
+Do not edit files.
+```
+
+정상 기준:
+
+```text
+URL: http://127.0.0.1:3000/login
+Heading: 로그인
+Console error: 0
+```
+
+Next.js 개발 모드의 최초 컴파일 직후에는 일시적인 Console 항목이 남을 수 있으므로 발표 전 주요 경로를 한 번 열고 위 순서로 다시 확인한다.
+
+## 7. 라이브 데모 데이터
+
+로그인:
+
+```text
+live-demo@example.com / Demo1234!
+```
+
+`LiveDemo` 카테고리에서 입력할 값:
+
+| 문제 | 입력 | 저장된 정답 | 버그 상태 |
+| --- | --- | --- | --- |
+| DEMO 1 | `10.00` | `10` | 오답으로 잘못 처리 |
+| DEMO 2 | `java3` | `python3` | 정답으로 잘못 처리 |
+| DEMO 3 | `user 404` | `order 404` | 정답으로 잘못 처리 |
+
+버그 상태의 API 결과:
+
+```text
+POST /quiz/submit -> 200
+correct=2, total=3
+```
+
+수정 후 기대 결과:
+
+```text
+POST /quiz/submit -> 200
+correct=1, total=3
+incorrect_items -> DEMO 2, DEMO 3
+```
+
+전체 조사·수정·재검증 프롬프트는 `demo/LIVE_DEMO_PROMPTS.md`에 있다.
+
+## 8. 발표 종료
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\stop_live_demo.ps1
+```
+
+이 명령은 start 스크립트가 기록한 백엔드·프론트 프로세스 트리만 종료한다.
+
+## 9. 문제 해결
+
+| 증상 | 확인 |
 | --- | --- |
-| `--isolated` | 개인 Chrome 프로필과 분리된 임시 프로필 사용 |
-| `--no-usage-statistics` | MCP 사용 통계 전송 중지 |
-| `--no-performance-crux` | 성능 분석 중 URL 기반 CrUX 조회 중지 |
-| `--redact-network-headers` | Network 결과의 민감 헤더 마스킹 |
+| MCP가 목록에 없음 | 프로젝트를 신뢰했는지 확인하고 `open_live_demo_codex.ps1`로 재실행 |
+| MCP 시작 시간 초과 | `npx -y chrome-devtools-mcp@1.5.0 --version` 실행 |
+| Chrome을 찾지 못함 | `.codex/config.toml`의 `executablePath` 확인 |
+| 프론트가 시작되지 않음 | `.demo/frontend.error.log` 확인, setup 재실행 |
+| 백엔드가 시작되지 않음 | `.demo/backend.error.log` 확인, `:8000` 사용 프로세스 확인 |
+| 수정 후 API가 이전 결과를 반환 | `-RestartBackend -SkipDataPreparation`로 백엔드 명시적 재시작 |
+| 로그인 실패 | `scripts/prepare_live_demo.py` 재실행 |
+| 카테고리가 없음 | start 스크립트를 다시 실행해 DB 데이터 재준비 |
+| 수정이 꼬임 | 현재 diff 확인 후 `scripts/apply_live_demo_solution.ps1` 사용 |
 
----
+## 10. 안전 기준
 
-## 3. Codex 재시작
-
-MCP를 추가한 뒤에는 기존 Codex 세션에 도구가 자동으로 생기지 않는다.
-
-1. 현재 Codex 창 또는 CLI를 완전히 종료한다.
-2. `Coding_Quiz` 폴더에서 Codex를 다시 연다.
-3. Codex에서 `/mcp`를 실행한다.
-4. 목록에서 `chrome-devtools`와 도구 목록을 확인한다.
-
-발표 연습처럼 로컬 임시 브라우저의 도구 호출을 자동 승인하려면 해당 실행에만 다음 설정을 적용한다.
-
-```powershell
-Set-Location C:\Users\gram\tvcf\Coding_Quiz
-codex -c 'mcp_servers.chrome-devtools.default_tools_approval_mode="approve"'
-```
-
-일반 업무에서는 기본 승인 모드를 유지하고 브라우저 동작을 직접 확인한다.
-
----
-
-## 4. 프로젝트 실행
-
-PowerShell 창을 두 개 연다.
-
-### 터미널 1: FastAPI
-
-```powershell
-Set-Location C:\Users\gram\tvcf\Coding_Quiz
-& '.\.venv\Scripts\python.exe' -m uvicorn main:app --reload --port 8000
-```
-
-확인 주소:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-### 터미널 2: Next.js
-
-```powershell
-$env:PATH = "$env:APPDATA\nvm\v22.12.0;$env:PATH"
-Set-Location C:\Users\gram\tvcf\Coding_Quiz\frontend
-npm run dev
-```
-
-확인 주소:
-
-```text
-http://127.0.0.1:3000
-```
-
-첫 개발 모드 컴파일은 `next/font/google` 요청 재시도로 약 1분 걸릴 수 있다. 발표 직전에 처음 열지 말고, 준비 단계에서 `/`, `/login`, `/quiz`, `/result`를 한 번씩 열어 둔다.
-
----
-
-## 5. MCP 첫 연결 테스트
-
-Codex에 아래 요청을 그대로 입력한다.
-
-```text
-Chrome DevTools MCP만 사용해서 http://127.0.0.1:3000을 여세요.
-페이지 로딩이 끝나면 다음 세 가지만 알려주세요.
-
-1. 현재 URL
-2. document.title
-3. Console error 개수
-
-코드와 페이지 데이터는 수정하지 마세요.
-```
-
-현재 프로젝트의 확인 결과:
-
-```text
-페이지 열기 성공
-document.title: 비어 있음
-Console error: 0개
-```
-
-제목이 비어 있는 것은 현재 루트 레이아웃에 title metadata가 없기 때문이다. MCP 연결 실패로 판단하지 않는다.
-
----
-
-## 6. Network까지 확인하는 두 번째 테스트
-
-```text
-Chrome DevTools MCP로 http://127.0.0.1:3000을 조사하세요.
-
-1. 페이지 스냅샷을 확인하세요.
-2. Console의 error와 warning을 구분하세요.
-3. localhost:8000 또는 127.0.0.1:8000으로 향하는 Network 요청을 찾으세요.
-4. 각 요청의 method, URL, status만 표로 정리하세요.
-
-아직 파일은 수정하지 말고 관찰 결과와 추정은 분리해서 작성하세요.
-```
-
-이 단계에서는 AI가 코드를 고치는 것이 목적이 아니다. 브라우저를 실제로 읽고 근거를 반환하는지만 확인한다.
-
----
-
-## 7. 정상 사용자 흐름 준비
-
-1. 테스트 전용 계정을 `/signup`에서 만든다.
-2. `/login`에서 로그인한다.
-3. `/quiz`에서 문제를 선택하고 제출한다.
-4. `/result`에서 점수와 오답 목록을 확인한다.
-5. 이 정상 흐름을 MCP로 한 번 더 조사한다.
-
-회사 계정이나 개인 계정은 사용하지 않는다. 로컬 SQLite에만 존재하는 발표용 계정을 사용한다.
-
-정상 흐름 확인이 끝난 뒤에만 실습용 버그 브랜치를 만든다.
-
-```powershell
-git switch -c demo/fullstack-mcp-debug
-```
-
----
-
-## 8. 자주 막히는 지점
-
-| 증상 | 원인 | 확인 방법 |
-| --- | --- | --- |
-| `does not support Node v20.12.1` | Node 버전 부족 | Node 22 PATH 설정 후 재실행 |
-| `/mcp`에 서버가 없음 | Codex 재시작 전 | Codex 완전 종료 후 다시 실행 |
-| `user cancelled MCP tool call` | 비대화형 승인 정책 | 연습 실행에만 `default_tools_approval_mode="approve"` 적용 |
-| MCP는 연결됐지만 페이지가 안 열림 | 프론트 미실행 | `http://127.0.0.1:3000` 직접 확인 |
-| 화면은 열리지만 API가 실패 | 백엔드 미실행 또는 환경 변수 | `:8000/docs`, `NEXT_PUBLIC_API_URL` 확인 |
-| 첫 화면이 오래 걸림 | Next.js 첫 컴파일과 외부 폰트 재시도 | 발표 전에 주요 경로 미리 열기 |
-| 개인 로그인 정보가 보임 | 기존 Chrome 프로필 사용 | `--isolated` 유지 |
-
----
-
-## 9. 준비 완료 기준
-
-- [ ] `codex mcp list`에 `chrome-devtools`가 enabled로 표시됨
-- [ ] Codex 재시작 후 `/mcp`에서 도구가 보임
-- [ ] `http://127.0.0.1:8000/docs`가 열림
-- [ ] `http://127.0.0.1:3000`이 열림
-- [ ] MCP가 현재 URL과 Console 오류 개수를 반환함
-- [ ] 테스트 계정으로 퀴즈 정상 흐름을 완료함
-- [ ] 정상 상태 테스트, lint, build가 통과함
-- [ ] 그 다음에만 실습용 버그를 주입함
-
----
-
-## 공식 문서
-
-- [Chrome DevTools for agents 시작하기](https://developer.chrome.com/docs/devtools/agents/get-started)
-- [Chrome DevTools MCP 공식 저장소](https://github.com/ChromeDevTools/chrome-devtools-mcp)
-- [Codex MCP 설정](https://learn.chatgpt.com/docs/extend/mcp)
-- [Claude Code MCP 설정](https://code.claude.com/docs/en/mcp)
-- [Node.js 지원 버전](https://nodejs.org/en/about/previous-releases)
+- MCP는 `--isolated` Chrome만 사용한다.
+- 회사 계정, 개인 계정, 운영 토큰을 입력하지 않는다.
+- 로컬 주소 외에는 열지 않는다.
+- 조사 단계에서는 파일을 수정하지 않는다.
+- DB schema, migration, 인증, API 계약은 데모 수정 범위에서 제외한다.
+- 최종 완료 기준은 같은 브라우저 흐름과 Network 응답의 재검증이다.

@@ -21,6 +21,7 @@ quiz_app.db.bak-*
 # FastAPI & Uvicorn 관련
 instance/
 *.pid
+.demo/
 
 # Node.js 관련 (프론트엔드)
 # Node.js 모듈 폴더 (의존성)

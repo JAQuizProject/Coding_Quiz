@@ -71,20 +71,20 @@
 
 ## 04. LIVE DEMO
 
-# API는 성공했는데 화면은 실패한다
+# API는 성공했는데 채점 정책은 실패한다
 
 | 구분 | 내용 |
 | --- | --- |
-| 사용자 동작 | 로그인 → 퀴즈 조회 → 답안 제출 → 결과 확인 |
-| 기대 결과 | 서버 채점 결과와 동일한 점수·오답 목록 표시 |
-| 실제 결과 | `POST /quiz/submit`은 `200`, 결과 화면은 잘못 표시 |
-| 조사 범위 | 브라우저, 프론트 응답 처리, FastAPI 응답 계약 |
+| 사용자 동작 | 로그인 → `LiveDemo` → 답안 3건 제출 → 결과 확인 |
+| 기대 결과 | `10.00`만 정답, `correct=1`, `total=3` |
+| 실제 결과 | `POST /quiz/submit`은 `200`, `correct=2`, `total=3` |
+| 조사 범위 | 브라우저, 프론트 판정 함수, FastAPI 채점 함수 |
 
 ```text
 브라우저 제출
   → frontend/api/quiz.js
   → POST /quiz/submit
-  → FastAPI Router / Schema / Service
+  → FastAPI Service / Grading
   → HTTP 응답
   → 결과 화면
 ```
@@ -136,17 +136,17 @@
 ### 수정 전
 
 ```text
-POST /quiz/submit → 200
-결과 화면 → 잘못된 점수 또는 빈 오답 목록
+POST /quiz/submit → 200, correct=2
+결과 화면 → DEMO 2·3을 잘못 정답 처리
 ```
 
 ### 수정 후
 
 ```text
 같은 로그인·제출 흐름 재실행
-  + API 응답 계약 확인
-  + 점수 확인
-  + 오답 목록 확인
+  + DEMO 1만 정답 확인
+  + API correct=1 확인
+  + DEMO 2·3 오답 목록 확인
   + Console 오류 없음
 ```
 
@@ -197,4 +197,3 @@ POST /quiz/submit → 200
 > AI가 코드를 얼마나 많이 작성했는지가 아니라, 실제 사용자 문제를 얼마나 빠르게 재현하고 화면부터 API까지 근거를 연결했는지를 측정해야 한다.
 
 **REPRODUCE · TRACE · DECIDE · VERIFY**
-

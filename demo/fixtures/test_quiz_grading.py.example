@@ -1,0 +1,23 @@
+import pytest
+
+from app.modules.quiz.grading import is_answer_accepted
+
+
+@pytest.mark.parametrize(
+    ("user_answer", "expected_answer", "accepted"),
+    [
+        ("10", "10", True),
+        ("10.00", "10", True),
+        ("10.009", "10", True),
+        ("10.02", "10", False),
+        ("1,000", "1000", True),
+        ("java3", "python3", False),
+        ("status 404", "http 404", False),
+    ],
+)
+def test_numeric_tolerance_applies_only_to_numeric_answers(
+    user_answer: str,
+    expected_answer: str,
+    accepted: bool,
+) -> None:
+    assert is_answer_accepted(user_answer, expected_answer) is accepted

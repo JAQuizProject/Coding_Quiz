@@ -1,0 +1,17 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+[mcp_servers.chrome-devtools]
+command = 'C:\Program Files\nodejs\npx.cmd'
+args = [
+  '-y',
+  'chrome-devtools-mcp@1.5.0',
+  '--isolated',
+  '--executablePath=C:\Program Files\Google\Chrome\Application\chrome.exe',
+  '--viewport=1440x900',
+  '--no-usage-statistics',
+  '--no-performance-crux',
+  '--redact-network-headers',
+]
+enabled = true
+startup_timeout_sec = 60.0
+default_tools_approval_mode = 'approve'

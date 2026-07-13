@@ -1,0 +1,168 @@
+diff --git a/app/modules/quiz/grading.py b/app/modules/quiz/grading.py
+--- a/app/modules/quiz/grading.py
++++ b/app/modules/quiz/grading.py
+@@ -7,7 +7,7 @@ from typing import List
+ _WHITESPACE_RE = re.compile(r"\s+")
+ _TOKEN_SPLIT_RE = re.compile(r"[^0-9a-zA-Z가-힣]+")
+ _COMPACT_RE = re.compile(r"[^0-9a-zA-Z가-힣]+")
+-_NUMBER_RE = re.compile(r"[-+]?\d+(?:\.\d+)?")
++_NUMBER_RE = re.compile(r"[-+]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)")
+ 
+ 
+ def normalize_text(value: str) -> str:
+@@ -48,6 +48,12 @@ def _is_single_answer_match(user: str, candidate: str) -> bool:
+     if user == candidate:
+         return True
+ 
++    # Numeric tolerance applies only when both complete values are numeric.
++    user_number = _parse_number(user)
++    candidate_number = _parse_number(candidate)
++    if user_number is not None and candidate_number is not None:
++        return abs(user_number - candidate_number) <= 0.01
++
+     user_compact = _compact(user)
+     candidate_compact = _compact(candidate)
+     if not user_compact or not candidate_compact:
+@@ -56,12 +62,6 @@ def _is_single_answer_match(user: str, candidate: str) -> bool:
+     if user_compact == candidate_compact:
+         return True
+ 
+-    # 숫자형 답변은 엄격하게 비교하되, 소수 오차는 소폭 허용
+-    user_number = _extract_single_number(user_compact)
+-    candidate_number = _extract_single_number(candidate_compact)
+-    if user_number is not None and candidate_number is not None:
+-        return abs(user_number - candidate_number) <= 0.01
+-
+     user_tokens = _tokenize(user)
+     candidate_tokens = _tokenize(candidate)
+     if user_tokens and candidate_tokens and user_tokens == candidate_tokens:
+@@ -89,11 +89,10 @@ def _tokenize(value: str) -> List[str]:
+     return [token for token in _TOKEN_SPLIT_RE.split(value) if token]
+ 
+ 
+-def _extract_single_number(value: str) -> float | None:
+-    matches = _NUMBER_RE.findall(value.replace(",", ""))
+-    if len(matches) != 1:
++def _parse_number(value: str) -> float | None:
++    if _NUMBER_RE.fullmatch(value) is None:
+         return None
+     try:
+-        return float(matches[0])
++        return float(value.replace(",", ""))
+     except ValueError:
+         return None
+diff --git a/frontend/utils/answerMatcher.js b/frontend/utils/answerMatcher.js
+--- a/frontend/utils/answerMatcher.js
++++ b/frontend/utils/answerMatcher.js
+@@ -1,7 +1,7 @@
+ const WHITESPACE_REGEX = /\s+/g;
+ const TOKEN_SPLIT_REGEX = /[^0-9a-zA-Z가-힣]+/g;
+ const COMPACT_REGEX = /[^0-9a-zA-Z가-힣]+/g;
+-const NUMBER_REGEX = /[-+]?\d+(?:\.\d+)?/g;
++const NUMBER_REGEX = /^[-+]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)$/;
+ 
+ const MATCH_PRIORITY = {
+   exact: 5,
+@@ -39,9 +39,8 @@ const splitAnswerCandidates = (answerField = "") => {
+ const tokenize = (value = "") => value.split(TOKEN_SPLIT_REGEX).filter(Boolean);
+ 
+ const extractSingleNumber = (value = "") => {
+-  const matches = value.replace(/,/g, "").match(NUMBER_REGEX);
+-  if (!matches || matches.length !== 1) return null;
+-  const numeric = Number(matches[0]);
++  if (!NUMBER_REGEX.test(value)) return null;
++  const numeric = Number(value.replace(/,/g, ""));
+   return Number.isNaN(numeric) ? null : numeric;
+ };
+ 
+@@ -106,6 +105,19 @@ const evaluateSingleAnswer = (userRaw = "", candidateRaw = "") => {
+     };
+   }
+ 
++  const userNumber = extractSingleNumber(user);
++  const candidateNumber = extractSingleNumber(candidate);
++  if (userNumber !== null && candidateNumber !== null) {
++    const accepted = Math.abs(userNumber - candidateNumber) <= 0.01;
++    return {
++      accepted,
++      matchType: accepted ? "number" : "none",
++      similarity: accepted ? 1 : 0,
++      threshold: null,
++      matchedAnswer: candidateRaw,
++    };
++  }
++
+   const userCompact = compactText(user);
+   const candidateCompact = compactText(candidate);
+   if (!userCompact || !candidateCompact) return defaultResult;
+@@ -119,19 +131,6 @@ const evaluateSingleAnswer = (userRaw = "", candidateRaw = "") => {
+     };
+   }
+ 
+-  const userNumber = extractSingleNumber(userCompact);
+-  const candidateNumber = extractSingleNumber(candidateCompact);
+-  if (userNumber !== null && candidateNumber !== null) {
+-    const accepted = Math.abs(userNumber - candidateNumber) <= 0.01;
+-    return {
+-      accepted,
+-      matchType: accepted ? "number" : "none",
+-      similarity: accepted ? 1 : 0,
+-      threshold: null,
+-      matchedAnswer: candidateRaw,
+-    };
+-  }
+-
+   const userTokens = tokenize(user);
+   const candidateTokens = tokenize(candidate);
+   if (
+diff --git a/tests/test_quiz_grading.py b/tests/test_quiz_grading.py
+new file mode 100644
+--- /dev/null
++++ b/tests/test_quiz_grading.py
+@@ -0,0 +1,23 @@
++import pytest
++
++from app.modules.quiz.grading import is_answer_accepted
++
++
++@pytest.mark.parametrize(
++    ("user_answer", "expected_answer", "accepted"),
++    [
++        ("10", "10", True),
++        ("10.00", "10", True),
++        ("10.009", "10", True),
++        ("10.02", "10", False),
++        ("1,000", "1000", True),
++        ("java3", "python3", False),
++        ("status 404", "http 404", False),
++    ],
++)
++def test_numeric_tolerance_applies_only_to_numeric_answers(
++    user_answer: str,
++    expected_answer: str,
++    accepted: bool,
++) -> None:
++    assert is_answer_accepted(user_answer, expected_answer) is accepted
+diff --git a/frontend/tests/answerMatcher.test.mjs b/frontend/tests/answerMatcher.test.mjs
+--- a/frontend/tests/answerMatcher.test.mjs
++++ b/frontend/tests/answerMatcher.test.mjs
+@@ -16,3 +16,19 @@
+ test("rejects an unrelated short answer", () => {
+   assert.equal(isAnswerAccepted("api", "dom"), false);
+ });
++
++const numericPolicyCases = [
++  ["10", "10", true],
++  ["10.00", "10", true],
++  ["10.009", "10", true],
++  ["10.02", "10", false],
++  ["1,000", "1000", true],
++  ["java3", "python3", false],
++  ["status 404", "http 404", false],
++];
++
++for (const [userAnswer, expectedAnswer, accepted] of numericPolicyCases) {
++  test(`${userAnswer} vs ${expectedAnswer} -> ${accepted}`, () => {
++    assert.equal(isAnswerAccepted(userAnswer, expectedAnswer), accepted);
++  });
++}

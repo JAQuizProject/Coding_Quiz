@@ -27,9 +27,14 @@ py-ulid = "^1.0.3"
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
 ruff = "*"
+httpx = "*"
 
 [tool.poetry.extras]
 postgres = ["psycopg2-binary"]
 
 [tool.ruff]
 line-length = 120
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
